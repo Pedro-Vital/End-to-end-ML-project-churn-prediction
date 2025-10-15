@@ -12,7 +12,10 @@ dependencies = [
     "pandas (>=2.3.3,<3.0.0)",
     "matplotlib (>=3.10.6,<4.0.0)",
     "seaborn (>=0.13.2,<0.14.0)",
-    "scikit-learn (>=1.7.2,<2.0.0)"
+    "scikit-learn (>=1.7.2,<2.0.0)",
+    "statsmodels (>=0.14.5,<0.15.0)",
+    "numpy (>=2.3.3,<3.0.0)",
+    "imblearn (>=0.0,<0.1)",
 ]
 
 [tool.poetry]
