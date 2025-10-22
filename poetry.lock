@@ -2150,6 +2150,19 @@ files = [
 ]
 
 [[package]]
+name = "nvidia-nccl-cu12"
+version = "2.28.3"
+description = "NVIDIA Collective Communication Library (NCCL) Runtime"
+optional = false
+python-versions = ">=3"
+groups = ["main"]
+markers = "platform_system == \"Linux\" and platform_machine != \"aarch64\""
+files = [
+    {file = "nvidia_nccl_cu12-2.28.3-py3-none-manylinux_2_18_aarch64.whl", hash = "sha256:85144f2197e81148e18f3ffd28a30d78b5046844877630d2710a1b22669a6e46"},
+    {file = "nvidia_nccl_cu12-2.28.3-py3-none-manylinux_2_18_x86_64.whl", hash = "sha256:79cf0412094e4a552889e5cb7757d92c010ead557ec722c5eebe6a94b1d8681c"},
+]
+
+[[package]]
 name = "packaging"
 version = "25.0"
 description = "Core utilities for Python packages"
@@ -3793,7 +3806,35 @@ files = [
     {file = "widgetsnbextension-4.0.14.tar.gz", hash = "sha256:a3629b04e3edb893212df862038c7232f62973373869db5084aed739b437b5af"},
 ]
 
+[[package]]
+name = "xgboost"
+version = "3.1.0"
+description = "XGBoost Python Package"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "xgboost-3.1.0-py3-none-macosx_10_15_x86_64.whl", hash = "sha256:fac53621a8cf381b3d19c1016a297f3ae9c6a2a59392e550064972e2fc21571d"},
+    {file = "xgboost-3.1.0-py3-none-macosx_12_0_arm64.whl", hash = "sha256:4638c9060466ea5342c995cf4ddf31e9c9dc2e602dd9cc7dd2554db929dbd6c9"},
+    {file = "xgboost-3.1.0-py3-none-manylinux_2_28_aarch64.whl", hash = "sha256:6173bf449e31dd8cbb340f99dce2149879177103f91a94340fb9215db0453183"},
+    {file = "xgboost-3.1.0-py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:0eaa2b9a18820b7910962e1b7f7f2c7db30911036d1b3ed6ab2a5a243caccd7b"},
+    {file = "xgboost-3.1.0-py3-none-win_amd64.whl", hash = "sha256:f726d00c626414fb918b8b0d616514c90b2a2c619b474d8c05e18738d640351d"},
+    {file = "xgboost-3.1.0.tar.gz", hash = "sha256:50660932cc37d6260263e1bbbe1e819e32100f2cb59f56a01315cd8d038e5025"},
+]
+
+[package.dependencies]
+numpy = "*"
+nvidia-nccl-cu12 = {version = "*", markers = "platform_system == \"Linux\" and platform_machine != \"aarch64\""}
+scipy = "*"
+
+[package.extras]
+dask = ["dask", "distributed", "pandas"]
+pandas = ["pandas (>=1.2)"]
+plotting = ["graphviz", "matplotlib"]
+pyspark = ["cloudpickle", "pyspark (>=3.4)", "scikit-learn"]
+scikit-learn = ["scikit-learn"]
+
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12"
-content-hash = "1e63f2f04a53e230e7c5e7a71a6b58f3ddfb0bde170e624a0439d65b7ee5abce"
+content-hash = "05f08a25c6b2a3923f083b60b0fccfaa86e31b4400947bacec75c4dc8c8e277d"
