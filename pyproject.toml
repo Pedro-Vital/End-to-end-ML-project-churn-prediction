@@ -22,6 +22,10 @@ dependencies = [
 [tool.poetry]
 packages = [{include = "churn_project", from = "src"}]
 
+[tool.mypy]
+python_version = "3.12"
+explicit_package_bases = true
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
