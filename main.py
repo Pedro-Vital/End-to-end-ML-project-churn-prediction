@@ -1,3 +1,3 @@
-from src.churn_project import logger
+from churn_project.logger import logger
 
 logger.info("Custom log working!")

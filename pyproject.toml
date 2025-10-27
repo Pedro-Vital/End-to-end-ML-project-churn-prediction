@@ -17,6 +17,8 @@ dependencies = [
     "numpy (>=2.3.3,<3.0.0)",
     "imblearn (>=0.0,<0.1)",
     "xgboost (>=3.1.0,<4.0.0)",
+    "ensure (>=1.0.4,<2.0.0)",
+    "box (>=0.1.5,<0.2.0)",
 ]
 
 [tool.poetry]
@@ -24,7 +26,13 @@ packages = [{include = "churn_project", from = "src"}]
 
 [tool.mypy]
 python_version = "3.12"
-explicit_package_bases = true
+ignore_missing_imports = false
+warn_unused_configs = true
+strict = false
+
+[[tool.mypy.overrides]]
+module = ["joblib.*", "box.*", "ensure.*", "yaml.*"]
+ignore_missing_imports = true
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
@@ -40,4 +48,5 @@ dev = [
     "pre-commit (>=4.3.0,<5.0.0)",
     "ruff (>=0.13.3,<0.14.0)",
     "mypy (>=1.18.2,<2.0.0)",
+    "types-pyyaml (>=6.0.12.20250915,<7.0.0.0)",
 ]
