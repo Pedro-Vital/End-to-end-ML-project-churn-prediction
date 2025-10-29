@@ -5,7 +5,8 @@ from typing import Any
 
 import joblib
 import yaml
-from box import BoxValueError, ConfigBox
+from box import ConfigBox
+from box.exceptions import BoxValueError
 from ensure import ensure_annotations
 
 from churn_project.logger import logger

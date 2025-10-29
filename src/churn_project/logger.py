@@ -1,10 +1,15 @@
 import logging
 import os
 import sys
+from datetime import datetime
 
 LOG_DIR = "logs"
 
-LOG_PATH = os.path.join(LOG_DIR, "running_log.log")
+# Create log file name with timestamp
+LOG_PATH = os.path.join(
+    LOG_DIR, f"running_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+)
+
 os.makedirs(LOG_DIR, exist_ok=True)
 
 logging.basicConfig(
