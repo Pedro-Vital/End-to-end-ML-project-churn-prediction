@@ -7,3 +7,8 @@ data_ingestion:
   db_password: "12345"
   db_name: "bank_db"
   query: "SELECT * FROM churners;"
+
+data_validation:
+  root_dir: artifacts/data_validation
+  unzip_data_dir: artifacts/data_ingestion/ingested_data.csv
+  STATUS_FILE: artifacts/data_validation/status.txt
