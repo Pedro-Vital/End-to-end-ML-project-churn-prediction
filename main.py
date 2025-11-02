@@ -1,3 +1,5 @@
-from churn_project.logger import logger
+from churn_project.pipeline.training_pipeline import TrainingPipeline
 
-logger.info("Custom log working!")
+if __name__ == "__main__":
+    pipeline = TrainingPipeline()
+    pipeline.run_pipeline()
