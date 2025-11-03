@@ -3,7 +3,7 @@ name = "churn-project"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "Pedro Vital",email = "pedrosalazarvital@gmail.com"}
+    {name = "Pedro Lucas Salazar Vital",email = "pedrosalazarvital@gmail.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.12,<4.0"
