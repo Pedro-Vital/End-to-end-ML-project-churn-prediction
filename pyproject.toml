@@ -3,10 +3,10 @@ name = "churn-project"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "Pedro Vital",email = "pedrosalazarvital@gmail.com"}
+    {name = "Pedro Lucas Salazar Vital",email = "pedrosalazarvital@gmail.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<4.0"
 dependencies = [
     "pymysql (>=1.1.2,<2.0.0)",
     "pandas (>=2.3.3,<3.0.0)",
@@ -18,11 +18,15 @@ dependencies = [
     "imblearn (>=0.0,<0.1)",
     "xgboost (>=3.1.0,<4.0.0)",
     "ensure (>=1.0.4,<2.0.0)",
-    "box (>=0.1.5,<0.2.0)",
+    "python-box (>=7.3.2,<8.0.0)",
+    "evidently (>=0.7.15,<0.8.0)",
 ]
 
 [tool.poetry]
 packages = [{include = "churn_project", from = "src"}]
+
+[tool.isort]
+profile = "black"
 
 [tool.mypy]
 python_version = "3.12"
@@ -31,7 +35,8 @@ warn_unused_configs = true
 strict = false
 
 [[tool.mypy.overrides]]
-module = ["joblib.*", "box.*", "ensure.*", "yaml.*"]
+# Ignore missing type stubs for the following modules
+module = ["joblib.*", "box.*", "ensure.*", "yaml.*", "pymysql.*"]
 ignore_missing_imports = true
 
 [build-system]
@@ -40,7 +45,6 @@ build-backend = "poetry.core.masonry.api"
 
 [dependency-groups]
 dev = [
-    "pytest (>=8.4.2,<9.0.0)",
     "black (>=25.9.0,<26.0.0)",
     "isort (>=6.0.1,<7.0.0)",
     "jupyter (>=1.1.1,<2.0.0)",
