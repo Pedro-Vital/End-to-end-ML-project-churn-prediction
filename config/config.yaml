@@ -2,7 +2,7 @@ artifacts_root: artifacts
 
 data_ingestion:
   db_host: "localhost"
-  db_user: "pedro"
+  db_user: "root"
   db_password: "12345"
   db_name: "bank_db"
   query: "SELECT * FROM churners;"

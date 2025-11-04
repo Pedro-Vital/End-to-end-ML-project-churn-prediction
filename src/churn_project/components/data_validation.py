@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 from evidently import DataDefinition, Dataset, Report
-from evidently.presets import DataDriftPreset, DataSummaryPreset
+from evidently.presets import DataDriftPreset
 
 from churn_project.entity.artifact_entity import DataValidationArtifact
 from churn_project.entity.config_entity import DataValidationConfig
@@ -70,7 +70,7 @@ class DataValidation:
             eval_data_ref = Dataset.from_pandas(reference_data, data_definition=schema)
 
             # Create and run the drift report
-            report = Report([DataDriftPreset(), DataSummaryPreset()])
+            report = Report([DataDriftPreset()])
             report = report.run(
                 reference_data=eval_data_ref, current_data=eval_data_curr
             )
@@ -83,17 +83,11 @@ class DataValidation:
             report_dict = report.dict()
 
             # Check if dataset drift is detected
-            # The drift information is in the metrics section
-            drift_detected = False
-            for metric in report_dict.get("metrics", []):
-                if metric.get("metric") == "DatasetDriftMetric":
-                    drift_detected = metric.get("result", {}).get(
-                        "dataset_drift", False
-                    )
-                    break
 
-            if drift_detected:
+            drift_detected = False
+            if report_dict.get("metrics")[0]['value']['count'] > 0:
                 logger.info("Data drift detected!")
+                drift_detected = True
             else:
                 logger.info("No data drift detected.")
 
