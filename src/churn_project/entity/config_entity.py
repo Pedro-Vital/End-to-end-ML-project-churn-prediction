@@ -8,15 +8,17 @@ class DataIngestionConfig:
     db_user: str
     db_password: str
     db_name: str
-    query: str
+    base_query: str
     feature_store_file_path: Path
     training_file_path: Path
     testing_file_path: Path
     train_test_split_ratio: float
+    random_state: int
+    columns: dict
 
 
 @dataclass(frozen=True)
 class DataValidationConfig:
     root_dir: Path
-    drift_report_file_path: Path
-    all_schema: dict
+    validation_report_path: Path
+    columns: dict

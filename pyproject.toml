@@ -20,6 +20,7 @@ dependencies = [
     "ensure (>=1.0.4,<2.0.0)",
     "python-box (>=7.3.2,<8.0.0)",
     "evidently (>=0.7.15,<0.8.0)",
+    "pytest (>=8.4.2,<9.0.0)",
 ]
 
 [tool.poetry]

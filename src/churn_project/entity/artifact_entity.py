@@ -6,10 +6,10 @@ from pathlib import Path
 class DataIngestionArtifact:
     training_file_path: Path
     testing_file_path: Path
+    feature_store_file_path: Path
 
 
 @dataclass
 class DataValidationArtifact:
     validation_status: bool
-    message: str
-    drift_report_file_path: Path
+    validation_report_path: Path
