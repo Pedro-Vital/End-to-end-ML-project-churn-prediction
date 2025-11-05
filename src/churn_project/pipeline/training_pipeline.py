@@ -23,9 +23,7 @@ class TrainingPipeline:
 
 
     def start_data_ingestion(self) -> DataIngestionArtifact:
-        """
-        This method starts the data ingestion component of the training pipeline.
-        """
+        """This method starts the data ingestion component of the training pipeline."""
         try:
             logger.info("Starting data ingestion component of the training pipeline.")
 
@@ -44,9 +42,7 @@ class TrainingPipeline:
     def start_data_validation(
         self, data_ingestion_artifact: DataIngestionArtifact
     ) -> DataValidationArtifact:
-        """
-        This method starts the data validation component of the training pipeline.
-        """
+        """This method starts the data validation component of the training pipeline."""
         try:
             logger.info("Starting data validation component of the training pipeline.")
 
