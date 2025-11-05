@@ -1,8 +1,6 @@
 import sys
 from typing import Tuple
 
-import pandas as pd
-
 from churn_project.components.data_ingestion import DataIngestion
 from churn_project.components.data_validation import DataValidation
 from churn_project.config.configuration import ConfigurationManager
@@ -20,10 +18,10 @@ class TrainingPipeline:
         self.data_ingestion_config = config_manager.get_data_ingestion_config()
         self.data_validation_config = config_manager.get_data_validation_config()
 
-
-
     def start_data_ingestion(self) -> DataIngestionArtifact:
-        """This method starts the data ingestion component of the training pipeline."""
+        """
+        This method starts the data ingestion component of the training pipeline.
+        """
         try:
             logger.info("Starting data ingestion component of the training pipeline.")
 
@@ -37,12 +35,12 @@ class TrainingPipeline:
             logger.error(f"Error in data ingestion component: {e}")
             raise CustomException(e, sys)
 
-
-
     def start_data_validation(
         self, data_ingestion_artifact: DataIngestionArtifact
     ) -> DataValidationArtifact:
-        """This method starts the data validation component of the training pipeline."""
+        """
+        This method starts the data validation component of the training pipeline.
+        """
         try:
             logger.info("Starting data validation component of the training pipeline.")
 
@@ -58,8 +56,6 @@ class TrainingPipeline:
         except Exception as e:
             logger.error(f"Error in data validation component: {e}")
             raise CustomException(e, sys)
-        
-
 
     def run_pipeline(self) -> Tuple[DataIngestionArtifact, DataValidationArtifact]:
         """Run the entire training pipeline"""
@@ -67,8 +63,10 @@ class TrainingPipeline:
             logger.info("Starting training pipeline")
 
             data_ingestion_artifact = self.start_data_ingestion()
-            data_validation_artifact = self.start_data_validation(data_ingestion_artifact)
-            
+            data_validation_artifact = self.start_data_validation(
+                data_ingestion_artifact
+            )
+
             logger.info("Training pipeline completed successfully")
             return data_ingestion_artifact, data_validation_artifact
 
