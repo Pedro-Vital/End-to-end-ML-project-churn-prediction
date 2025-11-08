@@ -13,3 +13,10 @@ class DataIngestionArtifact:
 class DataValidationArtifact:
     validation_status: bool
     validation_report_path: Path
+
+
+@dataclass
+class DataTransformationArtifact:
+    transformed_train_path: Path
+    transformed_test_path: Path
+    preprocessor_path: Path

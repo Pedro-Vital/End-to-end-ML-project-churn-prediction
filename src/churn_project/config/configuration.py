@@ -1,7 +1,11 @@
 from pathlib import Path
 
 from churn_project.constants import CONFIG_FILE_PATH, PARAMS_FILE_PATH, SCHEMA_FILE_PATH
-from churn_project.entity.config_entity import DataIngestionConfig, DataValidationConfig
+from churn_project.entity.config_entity import (
+    DataIngestionConfig,
+    DataTransformationConfig,
+    DataValidationConfig,
+)
 from churn_project.utils import create_directories, read_yaml
 
 
@@ -20,10 +24,10 @@ class ConfigurationManager:
         create_directories([self.config.artifacts_root])
 
     def get_data_ingestion_config(self) -> DataIngestionConfig:
-        config = self.config.data_ingestion
-        columns = self.schema.columns
+        config = self.config.data_ingestion  # dict-like ConfigBox
+        columns = self.schema.columns  # dict-like ConfigBox
 
-        create_directories([config.root_dir])  # Create artifacts/data_ingestion/
+        create_directories([config.root_dir])
 
         data_ingestion_config = DataIngestionConfig(
             db_host=config.db_host,
@@ -53,3 +57,21 @@ class ConfigurationManager:
             columns=columns,
         )
         return data_validation_config
+
+    def get_data_transformation_config(self) -> DataTransformationConfig:
+        config = self.config.data_transformation
+        target_column = self.schema.target_column  # target str
+        drop_columns = self.schema.drop_columns  # list of str
+
+        create_directories([config.root_dir])
+
+        data_transformation_config = DataTransformationConfig(
+            root_dir=Path(config.root_dir),
+            transformed_train_path=Path(config.transformed_train_path),
+            transformed_test_path=Path(config.transformed_test_path),
+            preprocessor_path=Path(config.preprocessor_path),
+            target_column=target_column,
+            drop_columns=drop_columns,
+            random_state=config.random_state,
+        )
+        return data_transformation_config

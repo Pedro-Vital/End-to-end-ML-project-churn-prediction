@@ -1,23 +1,21 @@
-from datetime import datetime
 import sys
-from pathlib import Path
-from churn_project.utils import save_json
+from datetime import datetime
 
 import pandas as pd
 
-from churn_project.entity.artifact_entity import DataValidationArtifact
+from churn_project.entity.artifact_entity import (
+    DataIngestionArtifact,
+    DataValidationArtifact,
+)
 from churn_project.entity.config_entity import DataValidationConfig
 from churn_project.exception import CustomException
 from churn_project.logger import logger
-
-
+from churn_project.utils import save_json
 
 
 class DataValidation:
     def __init__(self, config: DataValidationConfig):
         self.config = config
-
-
 
     def validate_columns(self, data: pd.DataFrame) -> bool:
         """Checks whether all the columns exist in the dataframe"""
@@ -35,8 +33,6 @@ class DataValidation:
         except Exception as e:
             logger.error(f"Error occurred while checking for column existence: {e}")
             raise CustomException(e, sys)
-
-
 
     def validate_data_types(self, data: pd.DataFrame) -> bool:
         """Checks whether the data types of columns match the expected types"""
@@ -59,40 +55,62 @@ class DataValidation:
         except Exception as e:
             logger.error(f"Error occurred while validating data types: {e}")
             raise CustomException(e, sys)
-        
-    
 
-    def initiate_data_validation(self, data_ingestion_artifact) -> DataValidationArtifact:
+    def check_missing_values(self, data: pd.DataFrame) -> bool:
+        """Checks for missing values in the dataframe"""
+        try:
+            missing_value_report = data.isnull().sum().to_dict()
+            total_missing = sum(missing_value_report.values())
+            if total_missing > 0:
+                logger.info(f"Missing values found: {missing_value_report}")
+                return False
+            logger.info("No missing values found.")
+            return True
+        except Exception as e:
+            logger.error(f"Error occurred while checking for missing values: {e}")
+            raise CustomException(e, sys)
+
+    def initiate_data_validation(
+        self, data_ingestion_artifact: DataIngestionArtifact
+    ) -> DataValidationArtifact:
         """Main method to initiate data validation process"""
         try:
             logger.info("Starting data validation process")
-            
+
             # Load the ingested data
             data = pd.read_csv(data_ingestion_artifact.feature_store_file_path)
 
             # Validate columns
             is_column_valid = self.validate_columns(data)
             is_type_valid = self.validate_data_types(data)
+            is_missing_values_valid = self.check_missing_values(data)
 
-            validation_status = is_column_valid and is_type_valid
+            validation_status = (
+                is_column_valid and is_type_valid and is_missing_values_valid
+            )
 
             validation_report = {
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "status": validation_status,
                 "check": {
-                    "columns": is_column_valid,
-                    "data_types": is_type_valid
+                    "columns": "Success" if is_column_valid else "Failed",
+                    "data_types": "Success" if is_type_valid else "Failed",
+                    "missing_values": (
+                        "Success" if is_missing_values_valid else "Failed"
+                    ),
                 },
-                "sample": data.head().to_dict()
+                "sample": data.head().to_dict(),
             }
             save_json(self.config.validation_report_path, validation_report)
-            logger.info(f"Data validation report saved at {self.config.validation_report_path}")
-            
+            logger.info(
+                f"Data validation report saved at {self.config.validation_report_path}"
+            )
+
             data_validation_artifact = DataValidationArtifact(
                 validation_status=validation_status,
                 validation_report_path=self.config.validation_report_path,
             )
-            
+
             logger.info("Data validation process completed")
             return data_validation_artifact
         except Exception as e:

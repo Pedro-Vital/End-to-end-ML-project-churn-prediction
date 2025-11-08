@@ -17,10 +17,10 @@ dependencies = [
     "numpy (>=2.3.3,<3.0.0)",
     "imblearn (>=0.0,<0.1)",
     "xgboost (>=3.1.0,<4.0.0)",
-    "ensure (>=1.0.4,<2.0.0)",
     "python-box (>=7.3.2,<8.0.0)",
     "evidently (>=0.7.15,<0.8.0)",
     "pytest (>=8.4.2,<9.0.0)",
+    "sqlalchemy (>=2.0.44,<3.0.0)",
 ]
 
 [tool.poetry]

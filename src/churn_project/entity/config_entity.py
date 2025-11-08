@@ -22,3 +22,14 @@ class DataValidationConfig:
     root_dir: Path
     validation_report_path: Path
     columns: dict
+
+
+@dataclass
+class DataTransformationConfig:
+    root_dir: Path
+    transformed_train_path: Path
+    transformed_test_path: Path
+    preprocessor_path: Path
+    target_column: str
+    drop_columns: list[str]
+    random_state: int

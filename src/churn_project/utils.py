@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -7,25 +8,13 @@ import joblib
 import yaml
 from box import ConfigBox
 from box.exceptions import BoxValueError
-from ensure import ensure_annotations
 
+from churn_project.exception import CustomException
 from churn_project.logger import logger
 
 
-@ensure_annotations
 def read_yaml(path_to_yaml: Path) -> ConfigBox:
-    """reads yaml file and returns
-
-    Args:
-        path_to_yaml (str): path like input
-
-    Raises:
-        ValueError: if yaml file is empty
-        e: empty file
-
-    Returns:
-        ConfigBox: ConfigBox type
-    """
+    """reads yaml file and returns as ConfigBox object"""
     try:
         with open(path_to_yaml) as yaml_file:
             content = yaml.safe_load(yaml_file)
@@ -37,7 +26,6 @@ def read_yaml(path_to_yaml: Path) -> ConfigBox:
         raise e
 
 
-@ensure_annotations
 def create_directories(path_to_directories: list, verbose=True):
     """create list of directories
 
@@ -51,7 +39,6 @@ def create_directories(path_to_directories: list, verbose=True):
             logger.info(f"created directory at: {path}")
 
 
-@ensure_annotations
 def save_json(path: Path, data: dict):
     """save json data
 
@@ -65,7 +52,6 @@ def save_json(path: Path, data: dict):
     logger.info(f"json file saved at: {path}")
 
 
-@ensure_annotations
 def load_json(path: Path) -> ConfigBox:
     """load json files data
 
@@ -82,7 +68,6 @@ def load_json(path: Path) -> ConfigBox:
     return ConfigBox(content)
 
 
-@ensure_annotations
 def save_bin(data: Any, path: Path):
     """save binary file
 
@@ -94,7 +79,6 @@ def save_bin(data: Any, path: Path):
     logger.info(f"binary file saved at: {path}")
 
 
-@ensure_annotations
 def load_bin(path: Path) -> Any:
     """load binary data
 
@@ -109,7 +93,6 @@ def load_bin(path: Path) -> Any:
     return data
 
 
-@ensure_annotations
 def get_size(path: Path) -> str:
     """get size in KB
 
@@ -121,3 +104,29 @@ def get_size(path: Path) -> str:
     """
     size_in_kb = round(os.path.getsize(path) / 1024)
     return f"~ {size_in_kb} KB"
+
+
+def save_object(file_path: Path, obj) -> None:
+    """
+    Save a Python object to the specified file path using joblib.
+    Creates directories if they don't exist.
+    """
+    try:
+        dir_path = os.path.dirname(file_path)
+        os.makedirs(dir_path, exist_ok=True)
+
+        joblib.dump(obj, file_path)
+        logger.info(f"Object successfully saved using joblib at: {file_path}")
+
+    except Exception as e:
+        raise CustomException(e, sys)
+
+
+def load_object(file_path: str):
+    """
+    Load a Python object saved with joblib.
+    """
+    try:
+        return joblib.load(file_path)
+    except Exception as e:
+        raise CustomException(e, sys)

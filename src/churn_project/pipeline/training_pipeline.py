@@ -2,10 +2,12 @@ import sys
 from typing import Tuple
 
 from churn_project.components.data_ingestion import DataIngestion
+from churn_project.components.data_transformation import DataTransformation
 from churn_project.components.data_validation import DataValidation
 from churn_project.config.configuration import ConfigurationManager
 from churn_project.entity.artifact_entity import (
     DataIngestionArtifact,
+    DataTransformationArtifact,
     DataValidationArtifact,
 )
 from churn_project.exception import CustomException
@@ -17,6 +19,9 @@ class TrainingPipeline:
         config_manager = ConfigurationManager()
         self.data_ingestion_config = config_manager.get_data_ingestion_config()
         self.data_validation_config = config_manager.get_data_validation_config()
+        self.data_transformation_config = (
+            config_manager.get_data_transformation_config()
+        )
 
     def start_data_ingestion(self) -> DataIngestionArtifact:
         """
@@ -57,7 +62,48 @@ class TrainingPipeline:
             logger.error(f"Error in data validation component: {e}")
             raise CustomException(e, sys)
 
-    def run_pipeline(self) -> Tuple[DataIngestionArtifact, DataValidationArtifact]:
+    def start_data_transformation(
+        self,
+        data_validation_artifact: DataValidationArtifact,
+        data_ingestion_artifact: DataIngestionArtifact,
+    ) -> DataTransformationArtifact:
+        """
+        This method starts the data transformation component of the training pipeline.
+        """
+        try:
+            if not data_validation_artifact.validation_status:
+                raise CustomException(
+                    Exception(
+                        "Data validation failed. Cannot proceed to data transformation."
+                    ),
+                    sys,
+                )
+
+            logger.info(
+                "Starting data transformation component of the training pipeline."
+            )
+
+            data_transformation = DataTransformation(
+                config=self.data_transformation_config
+            )
+            data_transformation_artifact = (
+                data_transformation.initiate_data_transformation(
+                    data_ingestion_artifact=data_ingestion_artifact
+                )
+            )
+
+            logger.info("Data transformation component completed successfully.")
+            return data_transformation_artifact
+
+        except Exception as e:
+            logger.error(f"Error in data transformation component: {e}")
+            raise CustomException(e, sys)
+
+    def run_pipeline(
+        self,
+    ) -> Tuple[
+        DataIngestionArtifact, DataValidationArtifact, DataTransformationArtifact
+    ]:
         """Run the entire training pipeline"""
         try:
             logger.info("Starting training pipeline")
@@ -66,9 +112,16 @@ class TrainingPipeline:
             data_validation_artifact = self.start_data_validation(
                 data_ingestion_artifact
             )
+            data_transformation_artifact = self.start_data_transformation(
+                data_validation_artifact, data_ingestion_artifact
+            )
 
             logger.info("Training pipeline completed successfully")
-            return data_ingestion_artifact, data_validation_artifact
+            return (
+                data_ingestion_artifact,
+                data_validation_artifact,
+                data_transformation_artifact,
+            )
 
         except Exception as e:
             logger.error(f"Error in training pipeline: {e}")
