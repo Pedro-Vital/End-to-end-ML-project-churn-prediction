@@ -33,3 +33,13 @@ class DataTransformationConfig:
     target_column: str
     drop_columns: list[str]
     random_state: int
+
+
+@dataclass
+class ModelTrainerConfig:
+    root_dir: Path
+    trained_model_path: Path
+    model_name: str
+    best_params: dict
+    expected_score: float
+    mlflow_uri: str

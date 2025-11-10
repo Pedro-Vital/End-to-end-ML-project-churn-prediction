@@ -4,11 +4,13 @@ from typing import Tuple
 from churn_project.components.data_ingestion import DataIngestion
 from churn_project.components.data_transformation import DataTransformation
 from churn_project.components.data_validation import DataValidation
+from churn_project.components.model_trainer import ModelTrainer
 from churn_project.config.configuration import ConfigurationManager
 from churn_project.entity.artifact_entity import (
     DataIngestionArtifact,
     DataTransformationArtifact,
     DataValidationArtifact,
+    ModelTrainerArtifact,
 )
 from churn_project.exception import CustomException
 from churn_project.logger import logger
@@ -22,6 +24,7 @@ class TrainingPipeline:
         self.data_transformation_config = (
             config_manager.get_data_transformation_config()
         )
+        self.model_trainer_config = config_manager.get_model_trainer_config()
 
     def start_data_ingestion(self) -> DataIngestionArtifact:
         """
@@ -99,10 +102,34 @@ class TrainingPipeline:
             logger.error(f"Error in data transformation component: {e}")
             raise CustomException(e, sys)
 
+    def start_model_trainer(
+        self, data_transformation_artifact: DataTransformationArtifact
+    ) -> ModelTrainerArtifact:
+        """
+        This method starts the model training component of the training pipeline.
+        """
+        try:
+            logger.info("Starting model training component of the training pipeline.")
+
+            model_trainer = ModelTrainer(config=self.model_trainer_config)
+            model_trainer_artifact = model_trainer.initiate_model_trainer(
+                data_transformation_artifact=data_transformation_artifact
+            )
+
+            logger.info("Model training component completed successfully.")
+            return model_trainer_artifact
+
+        except Exception as e:
+            logger.error(f"Error in model training component: {e}")
+            raise CustomException(e, sys)
+
     def run_pipeline(
         self,
     ) -> Tuple[
-        DataIngestionArtifact, DataValidationArtifact, DataTransformationArtifact
+        DataIngestionArtifact,
+        DataValidationArtifact,
+        DataTransformationArtifact,
+        ModelTrainerArtifact,
     ]:
         """Run the entire training pipeline"""
         try:
@@ -115,12 +142,16 @@ class TrainingPipeline:
             data_transformation_artifact = self.start_data_transformation(
                 data_validation_artifact, data_ingestion_artifact
             )
+            model_trainer_artifact = self.start_model_trainer(
+                data_transformation_artifact
+            )
 
             logger.info("Training pipeline completed successfully")
             return (
                 data_ingestion_artifact,
                 data_validation_artifact,
                 data_transformation_artifact,
+                model_trainer_artifact,
             )
 
         except Exception as e:

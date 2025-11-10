@@ -5,6 +5,7 @@ from churn_project.entity.config_entity import (
     DataIngestionConfig,
     DataTransformationConfig,
     DataValidationConfig,
+    ModelTrainerConfig,
 )
 from churn_project.utils import create_directories, read_yaml
 
@@ -75,3 +76,19 @@ class ConfigurationManager:
             random_state=config.random_state,
         )
         return data_transformation_config
+
+    def get_model_trainer_config(self) -> ModelTrainerConfig:
+        config = self.config.model_trainer
+        params = self.params
+
+        create_directories([config.root_dir])
+
+        model_trainer_config = ModelTrainerConfig(
+            root_dir=Path(config.root_dir),
+            trained_model_path=Path(config.trained_model_path),
+            model_name=config.model_name,
+            best_params=params.get(config.model_name, {}),
+            expected_score=config.expected_score,
+            mlflow_uri=config.mlflow_uri,
+        )
+        return model_trainer_config

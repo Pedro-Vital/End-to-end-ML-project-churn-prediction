@@ -20,3 +20,10 @@ class DataTransformationArtifact:
     transformed_train_path: Path
     transformed_test_path: Path
     preprocessor_path: Path
+
+
+@dataclass
+class ModelTrainerArtifact:
+    trained_model_path: Path
+    metric_score: float
+    model_name: str

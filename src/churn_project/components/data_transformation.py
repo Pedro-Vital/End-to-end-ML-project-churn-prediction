@@ -119,12 +119,12 @@ class DataTransformation:
             )
 
             logger.info("Saving train and test data arrays.")
-            train_array = np.c_[X_train_resampled, y_train_resampled]
-            test_array = np.c_[X_test_transformed, y_test]
+            train_arr = np.c_[X_train_resampled, y_train_resampled]
+            test_arr = np.c_[X_test_transformed, y_test]
             os.makedirs(Path(self.config.transformed_train_path).parent, exist_ok=True)
             os.makedirs(Path(self.config.transformed_test_path).parent, exist_ok=True)
-            np.save(self.config.transformed_train_path, train_array)
-            np.save(self.config.transformed_test_path, test_array)
+            np.save(self.config.transformed_train_path, train_arr)
+            np.save(self.config.transformed_test_path, test_arr)
 
             logger.info("Saving preprocessor object.")
             save_object(file_path=self.config.preprocessor_path, obj=preprocessor)
