@@ -2,6 +2,7 @@ import os
 import sys
 from pathlib import Path
 
+import joblib
 import numpy as np
 import pandas as pd
 from imblearn.over_sampling import SMOTE
@@ -16,7 +17,6 @@ from churn_project.entity.artifact_entity import (
 from churn_project.entity.config_entity import DataTransformationConfig
 from churn_project.exception import CustomException
 from churn_project.logger import logger
-from churn_project.utils import save_object
 
 
 class FeatureEngineer(BaseEstimator, TransformerMixin):
@@ -112,6 +112,14 @@ class DataTransformation:
             X_train_transformed = preprocessor.fit_transform(X_train)
             X_test_transformed = preprocessor.transform(X_test)
 
+            # Getting feature names after transformation
+            feature_names = (
+                preprocessor.named_steps["feature_engineer"]
+                .transform(X_train)
+                .columns.tolist()
+            )
+            logger.info(f"Transformed feature names: {feature_names}")
+
             logger.info("Balancing training data using SMOTE.")
             resampler = SMOTE(random_state=self.config.random_state)
             X_train_resampled, y_train_resampled = resampler.fit_resample(
@@ -127,7 +135,7 @@ class DataTransformation:
             np.save(self.config.transformed_test_path, test_arr)
 
             logger.info("Saving preprocessor object.")
-            save_object(file_path=self.config.preprocessor_path, obj=preprocessor)
+            joblib.dump(preprocessor, self.config.preprocessor_path)
 
             logger.info("Data transformation process completed.")
 
@@ -135,6 +143,7 @@ class DataTransformation:
                 transformed_train_path=self.config.transformed_train_path,
                 transformed_test_path=self.config.transformed_test_path,
                 preprocessor_path=self.config.preprocessor_path,
+                feature_names=feature_names,
             )
 
         except Exception as e:

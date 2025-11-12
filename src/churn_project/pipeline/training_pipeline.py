@@ -4,12 +4,14 @@ from typing import Tuple
 from churn_project.components.data_ingestion import DataIngestion
 from churn_project.components.data_transformation import DataTransformation
 from churn_project.components.data_validation import DataValidation
+from churn_project.components.model_evaluation import ModelEvaluation
 from churn_project.components.model_trainer import ModelTrainer
 from churn_project.config.configuration import ConfigurationManager
 from churn_project.entity.artifact_entity import (
     DataIngestionArtifact,
     DataTransformationArtifact,
     DataValidationArtifact,
+    ModelEvaluationArtifact,
     ModelTrainerArtifact,
 )
 from churn_project.exception import CustomException
@@ -25,6 +27,7 @@ class TrainingPipeline:
             config_manager.get_data_transformation_config()
         )
         self.model_trainer_config = config_manager.get_model_trainer_config()
+        self.model_evaluation_config = config_manager.get_model_evaluation_config()
 
     def start_data_ingestion(self) -> DataIngestionArtifact:
         """
@@ -123,6 +126,30 @@ class TrainingPipeline:
             logger.error(f"Error in model training component: {e}")
             raise CustomException(e, sys)
 
+    def start_model_evaluation(
+        self,
+        data_transformation_artifact: DataTransformationArtifact,
+        model_trainer_artifact: ModelTrainerArtifact,
+    ) -> ModelEvaluationArtifact:
+        """
+        This method starts the model evaluation component of the training pipeline.
+        """
+        try:
+            logger.info("Starting model evaluation component of the training pipeline.")
+
+            model_evaluation = ModelEvaluation(config=self.model_evaluation_config)
+            model_evaluation_artifact = model_evaluation.initiate_model_evaluation(
+                data_transformation_artifact=data_transformation_artifact,
+                model_trainer_artifact=model_trainer_artifact,
+            )
+
+            logger.info("Model evaluation component completed successfully.")
+            return model_evaluation_artifact
+
+        except Exception as e:
+            logger.error(f"Error in model evaluation component: {e}")
+            raise CustomException(e, sys)
+
     def run_pipeline(
         self,
     ) -> Tuple[
@@ -130,6 +157,7 @@ class TrainingPipeline:
         DataValidationArtifact,
         DataTransformationArtifact,
         ModelTrainerArtifact,
+        ModelEvaluationArtifact,
     ]:
         """Run the entire training pipeline"""
         try:
@@ -145,6 +173,9 @@ class TrainingPipeline:
             model_trainer_artifact = self.start_model_trainer(
                 data_transformation_artifact
             )
+            model_evaluation_artifact = self.start_model_evaluation(
+                data_transformation_artifact, model_trainer_artifact
+            )
 
             logger.info("Training pipeline completed successfully")
             return (
@@ -152,6 +183,7 @@ class TrainingPipeline:
                 data_validation_artifact,
                 data_transformation_artifact,
                 model_trainer_artifact,
+                model_evaluation_artifact,
             )
 
         except Exception as e:

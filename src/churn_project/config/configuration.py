@@ -5,6 +5,7 @@ from churn_project.entity.config_entity import (
     DataIngestionConfig,
     DataTransformationConfig,
     DataValidationConfig,
+    ModelEvaluationConfig,
     ModelTrainerConfig,
 )
 from churn_project.utils import create_directories, read_yaml
@@ -79,6 +80,7 @@ class ConfigurationManager:
 
     def get_model_trainer_config(self) -> ModelTrainerConfig:
         config = self.config.model_trainer
+        mlflow_config = self.config.mlflow
         params = self.params
 
         create_directories([config.root_dir])
@@ -87,8 +89,27 @@ class ConfigurationManager:
             root_dir=Path(config.root_dir),
             trained_model_path=Path(config.trained_model_path),
             model_name=config.model_name,
+            model_registry_name=mlflow_config.model_registry_name,
+            model_registry_alias=mlflow_config.model_registry_alias,
             best_params=params.get(config.model_name, {}),
             expected_score=config.expected_score,
-            mlflow_uri=config.mlflow_uri,
+            mlflow_uri=mlflow_config.tracking_uri,
+            mlflow_experiment_name=mlflow_config.training_experiment_name,
         )
         return model_trainer_config
+
+    def get_model_evaluation_config(self) -> ModelEvaluationConfig:
+        config = self.config.model_evaluation
+        mlflow_config = self.config.mlflow
+
+        create_directories([config.root_dir])
+
+        model_evaluation_config = ModelEvaluationConfig(
+            root_dir=Path(config.root_dir),
+            model_evaluation_report_path=Path(config.model_evaluation_report_path),
+            model_registry_name=mlflow_config.model_registry_name,
+            model_registry_alias=mlflow_config.model_registry_alias,
+            mlflow_uri=mlflow_config.tracking_uri,
+            mlflow_experiment_name=mlflow_config.evaluation_experiment_name,
+        )
+        return model_evaluation_config

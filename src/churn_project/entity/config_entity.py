@@ -40,6 +40,19 @@ class ModelTrainerConfig:
     root_dir: Path
     trained_model_path: Path
     model_name: str
+    model_registry_name: str
+    model_registry_alias: str
     best_params: dict
     expected_score: float
     mlflow_uri: str
+    mlflow_experiment_name: str
+
+
+@dataclass
+class ModelEvaluationConfig:
+    root_dir: Path
+    model_evaluation_report_path: Path
+    model_registry_name: str
+    model_registry_alias: str
+    mlflow_uri: str
+    mlflow_experiment_name: str

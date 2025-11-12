@@ -1,6 +1,5 @@
 import json
 import os
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -9,7 +8,6 @@ import yaml
 from box import ConfigBox
 from box.exceptions import BoxValueError
 
-from churn_project.exception import CustomException
 from churn_project.logger import logger
 
 
@@ -104,29 +102,3 @@ def get_size(path: Path) -> str:
     """
     size_in_kb = round(os.path.getsize(path) / 1024)
     return f"~ {size_in_kb} KB"
-
-
-def save_object(file_path: Path, obj) -> None:
-    """
-    Save a Python object to the specified file path using joblib.
-    Creates directories if they don't exist.
-    """
-    try:
-        dir_path = os.path.dirname(file_path)
-        os.makedirs(dir_path, exist_ok=True)
-
-        joblib.dump(obj, file_path)
-        logger.info(f"Object successfully saved using joblib at: {file_path}")
-
-    except Exception as e:
-        raise CustomException(e, sys)
-
-
-def load_object(file_path: str):
-    """
-    Load a Python object saved with joblib.
-    """
-    try:
-        return joblib.load(file_path)
-    except Exception as e:
-        raise CustomException(e, sys)

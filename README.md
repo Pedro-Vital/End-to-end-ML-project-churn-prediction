@@ -3,5 +3,3 @@ entities (config and artifact)
 configuration manager in src config
 components
 pipeline
-main.py
-app.py
