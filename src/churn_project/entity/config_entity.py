@@ -40,10 +40,8 @@ class ModelTrainerConfig:
     root_dir: Path
     trained_model_path: Path
     model_name: str
-    model_registry_name: str
-    model_registry_alias: str
+    registry_name: str
     best_params: dict
-    expected_score: float
     mlflow_uri: str
     mlflow_experiment_name: str
 
@@ -52,7 +50,16 @@ class ModelTrainerConfig:
 class ModelEvaluationConfig:
     root_dir: Path
     model_evaluation_report_path: Path
-    model_registry_name: str
-    model_registry_alias: str
+    registry_name: str
+    prod_registry_name: str
     mlflow_uri: str
     mlflow_experiment_name: str
+
+
+# @dataclass
+# class ModelPusherConfig:
+#     root_dir: Path
+#     deployed_model_path: Path
+#     registry_name: str
+#     mlflow_uri: str
+#     mlflow_experiment_name: str

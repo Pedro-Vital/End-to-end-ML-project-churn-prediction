@@ -28,7 +28,6 @@ model_trainer:
   root_dir: artifacts/model_trainer
   trained_model_path: artifacts/model_trainer/model.pkl
   model_name: "XGBClassifier"
-  expected_score: 0.90
 
 model_evaluation:
   root_dir: artifacts/model_evaluation
@@ -38,5 +37,5 @@ mlflow:
   tracking_uri: "http://127.0.0.1:5000"
   training_experiment_name: "Churn-Model-Training"
   evaluation_experiment_name: "Churn-Model-Evaluation"
-  model_registry_name: "dev.churn_model"
-  model_registry_alias: "candidate"
+  registry_name: "churn_model"
+  prod_registry_name: "prod.churn_model"

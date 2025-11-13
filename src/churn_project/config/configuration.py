@@ -89,10 +89,8 @@ class ConfigurationManager:
             root_dir=Path(config.root_dir),
             trained_model_path=Path(config.trained_model_path),
             model_name=config.model_name,
-            model_registry_name=mlflow_config.model_registry_name,
-            model_registry_alias=mlflow_config.model_registry_alias,
+            registry_name=mlflow_config.registry_name,
             best_params=params.get(config.model_name, {}),
-            expected_score=config.expected_score,
             mlflow_uri=mlflow_config.tracking_uri,
             mlflow_experiment_name=mlflow_config.training_experiment_name,
         )
@@ -107,8 +105,8 @@ class ConfigurationManager:
         model_evaluation_config = ModelEvaluationConfig(
             root_dir=Path(config.root_dir),
             model_evaluation_report_path=Path(config.model_evaluation_report_path),
-            model_registry_name=mlflow_config.model_registry_name,
-            model_registry_alias=mlflow_config.model_registry_alias,
+            registry_name=mlflow_config.registry_name,
+            prod_registry_name=mlflow_config.prod_registry_name,
             mlflow_uri=mlflow_config.tracking_uri,
             mlflow_experiment_name=mlflow_config.evaluation_experiment_name,
         )
