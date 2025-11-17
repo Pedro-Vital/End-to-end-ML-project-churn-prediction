@@ -1,3 +1,15 @@
-ElasticNet:
-  alpha: 0.1
-  l1_ratio: 0.1
+XGBClassifier:
+  n_estimators: 300
+  max_depth: 7
+  learning_rate: 0.1
+  subsample: 0.8
+  colsample_bytree: 0.7
+  random_state: 42
+
+RandomForestClassifier:
+  n_estimators: 300
+  max_depth: null
+  min_samples_split: 2
+  min_samples_leaf: 1
+  max_features: "sqrt"
+  random_state: 42

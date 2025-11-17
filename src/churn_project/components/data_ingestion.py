@@ -1,12 +1,13 @@
-import csv
 import os
+import sys
 
 import pandas as pd
-import pymysql
 from sklearn.model_selection import train_test_split
+from sqlalchemy import create_engine
 
 from churn_project.entity.artifact_entity import DataIngestionArtifact
 from churn_project.entity.config_entity import DataIngestionConfig
+from churn_project.exception import CustomException
 from churn_project.logger import logger
 from churn_project.utils import get_size
 
@@ -15,56 +16,44 @@ class DataIngestion:
     def __init__(self, config: DataIngestionConfig):
         self.config = config
 
-    def fetch_data(self) -> str:
-        logger.info("Starting data ingestion process")
-
-        # Connect to the database
-        connection = pymysql.connect(
-            host=self.config.db_host,
-            user=self.config.db_user,
-            password=self.config.db_password,
-            database=self.config.db_name,
-            cursorclass=pymysql.cursors.DictCursor,
-        )
-
+    def fetch_and_save_data(self) -> None:
+        """Fetch data from MySQL and save directly to CSV"""
         try:
-            with connection.cursor() as cursor:
-                cursor.execute(self.config.query)
-                data = cursor.fetchall()
-                logger.info("Data fetched successfully from MySQL database.")
-                return data
-        except Exception as e:
-            logger.error(f"Error during data ingestion: {e}")
-            raise e
-        finally:
-            connection.close()
+            logger.info("Starting data ingestion process")
 
-    def save_data_to_csv(self, data) -> None:
-        try:
-            csv_file_path = self.config.feature_store_file_path
-            # Ensure the parent directory exists
-            os.makedirs(csv_file_path.parent, exist_ok=True)
+            os.makedirs(self.config.feature_store_file_path.parent, exist_ok=True)
 
-            logger.info(f"Saving data to {csv_file_path}")
+            # Build SQLAlchemy engine
+            engine = create_engine(
+                f"mysql+pymysql://{self.config.db_user}:{self.config.db_password}@{self.config.db_host}/{self.config.db_name}"
+            )
 
-            with csv_file_path.open(mode="w", newline="") as file:
-                fieldnames = data[0].keys() if data else []
-                writer = csv.DictWriter(file, fieldnames=fieldnames)
+            columns = ", ".join(self.config.columns.keys())
+            query = self.config.base_query.format(columns)
+            logger.info(f"Executing query: {query}")
 
-                # Write header
-                writer.writeheader()
+            df = pd.read_sql(query, con=engine)
 
-                # Write data
-                writer.writerows(data)
+            if df.empty:
+                logger.warning("Fetched dataset is empty — skipping save.")
+                return
 
             logger.info(
-                f"Data saved to {csv_file_path} with size {get_size(csv_file_path)}"
+                f"Data fetched successfully: {df.shape[0]} rows, {df.shape[1]} columns"
             )
+
+            df.to_csv(self.config.feature_store_file_path, index=False)
+            logger.info(
+                f"Data saved to {self.config.feature_store_file_path} "
+                f"({get_size(self.config.feature_store_file_path)})"
+            )
+
         except Exception as e:
-            logger.error(f"Error saving data to CSV: {e}")
-            raise e
+            logger.error(f"Error during data ingestion: {e}")
+            raise CustomException(e, sys)
 
     def split_data(self) -> None:
+        """Split data into training and testing sets"""
         try:
 
             logger.info("Reading data from feature store for splitting")
@@ -72,7 +61,9 @@ class DataIngestion:
 
             logger.info("Splitting data into training and testing sets")
             train_df, test_df = train_test_split(
-                df, test_size=self.config.train_test_split_ratio, random_state=42
+                df,
+                test_size=self.config.train_test_split_ratio,
+                random_state=self.config.random_state,
             )
 
             # Save training data
@@ -91,14 +82,15 @@ class DataIngestion:
 
         except Exception as e:
             logger.error(f"Error during data splitting: {e}")
-            raise e
+            raise CustomException(e, sys)
 
     def initiate_data_ingestion(self) -> DataIngestionArtifact:
-        data = self.fetch_data()
-        self.save_data_to_csv(data)
+        """Initiate data ingestion process"""
+        self.fetch_and_save_data()
         self.split_data()
 
         return DataIngestionArtifact(
             training_file_path=self.config.training_file_path,
             testing_file_path=self.config.testing_file_path,
+            feature_store_file_path=self.config.feature_store_file_path,
         )

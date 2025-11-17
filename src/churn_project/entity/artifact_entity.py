@@ -6,10 +6,29 @@ from pathlib import Path
 class DataIngestionArtifact:
     training_file_path: Path
     testing_file_path: Path
+    feature_store_file_path: Path
 
 
 @dataclass
 class DataValidationArtifact:
     validation_status: bool
-    message: str
-    drift_report_file_path: Path
+    validation_report_path: Path
+
+
+@dataclass
+class DataTransformationArtifact:
+    transformed_train_path: Path
+    transformed_test_path: Path
+    preprocessor_path: Path
+    feature_names: list
+
+
+@dataclass
+class ModelTrainerArtifact:
+    registry_version: int
+
+
+@dataclass
+class ModelEvaluationArtifact:
+    is_model_accepted: bool
+    model_evaluation_report_path: Path

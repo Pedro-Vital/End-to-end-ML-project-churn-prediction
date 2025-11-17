@@ -5,17 +5,37 @@ data_ingestion:
   db_user: "root"
   db_password: "12345"
   db_name: "bank_db"
-  query: "SELECT * FROM churners;"
+  base_query: "SELECT {} FROM churners;"
   root_dir: artifacts/data_ingestion
-  feature_store_file_path: artifacts/data_ingestion/feature_store/ingested_data.csv
+  feature_store_file_path: artifacts/data_ingestion/feature_store.csv
   training_file_path: artifacts/data_ingestion/ingested/train.csv
   testing_file_path: artifacts/data_ingestion/ingested/test.csv
   train_test_split_ratio: 0.2
+  random_state: 42
 
 data_validation:
   root_dir: artifacts/data_validation
-  drift_report_file_path: artifacts/data_validation/drift_report/report.html
+  validation_report_path: artifacts/data_validation/validation_status.json
 
 data_transformation:
   root_dir: artifacts/data_transformation
-  data_path: artifacts/data_ingestion/feature_store/ingested_data.csv
+  transformed_train_path: artifacts/data_transformation/transformed/train.npy
+  transformed_test_path: artifacts/data_transformation/transformed/test.npy
+  preprocessor_path: artifacts/data_transformation/preprocessor.pkl
+  random_state: 42
+
+model_trainer:
+  root_dir: artifacts/model_trainer
+  trained_model_path: artifacts/model_trainer/model.pkl
+  model_name: "XGBClassifier"
+
+model_evaluation:
+  root_dir: artifacts/model_evaluation
+  change_threshold: 0.005
+  model_evaluation_report_path: artifacts/model_evaluation/evaluation_report.json
+
+mlflow:
+  tracking_uri: "http://127.0.0.1:5000"
+  experiment_name: "Churn-Pipeline"
+  registry_name: "churn_model"
+  prod_registry_name: "prod.churn_model"
