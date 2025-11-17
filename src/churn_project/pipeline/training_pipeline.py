@@ -1,6 +1,8 @@
 import sys
 from typing import Tuple
 
+import mlflow
+
 from churn_project.components.data_ingestion import DataIngestion
 from churn_project.components.data_transformation import DataTransformation
 from churn_project.components.data_validation import DataValidation
@@ -21,6 +23,7 @@ from churn_project.logger import logger
 class TrainingPipeline:
     def __init__(self):
         config_manager = ConfigurationManager()
+        self.mlflow_config = config_manager.get_mlflow_config()
         self.data_ingestion_config = config_manager.get_data_ingestion_config()
         self.data_validation_config = config_manager.get_data_validation_config()
         self.data_transformation_config = (
@@ -163,19 +166,29 @@ class TrainingPipeline:
         try:
             logger.info("Starting training pipeline")
 
-            data_ingestion_artifact = self.start_data_ingestion()
-            data_validation_artifact = self.start_data_validation(
-                data_ingestion_artifact
-            )
-            data_transformation_artifact = self.start_data_transformation(
-                data_validation_artifact, data_ingestion_artifact
-            )
-            model_trainer_artifact = self.start_model_trainer(
-                data_transformation_artifact
-            )
-            model_evaluation_artifact = self.start_model_evaluation(
-                data_transformation_artifact, model_trainer_artifact
-            )
+            # Set up MLflow tracking URI and experiment
+            mlflow.set_tracking_uri(self.mlflow_config.tracking_uri)
+            mlflow.set_experiment(self.mlflow_config.experiment_name)
+
+            with mlflow.start_run(run_name="Pipeline_Run"):
+
+                data_ingestion_artifact = self.start_data_ingestion()
+                data_validation_artifact = self.start_data_validation(
+                    data_ingestion_artifact
+                )
+                data_transformation_artifact = self.start_data_transformation(
+                    data_validation_artifact, data_ingestion_artifact
+                )
+
+                with mlflow.start_run(run_name="Model_Training", nested=True):
+                    model_trainer_artifact = self.start_model_trainer(
+                        data_transformation_artifact
+                    )
+
+                with mlflow.start_run(run_name="Model_Evaluation", nested=True):
+                    model_evaluation_artifact = self.start_model_evaluation(
+                        data_transformation_artifact, model_trainer_artifact
+                    )
 
             logger.info("Training pipeline completed successfully")
             return (

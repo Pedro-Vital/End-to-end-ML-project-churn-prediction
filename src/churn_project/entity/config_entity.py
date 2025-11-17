@@ -2,6 +2,14 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
+@dataclass
+class MlflowConfig:
+    tracking_uri: str
+    experiment_name: str
+    registry_name: str
+    prod_registry_name: str
+
+
 @dataclass(frozen=True)
 class DataIngestionConfig:
     db_host: str
@@ -40,26 +48,13 @@ class ModelTrainerConfig:
     root_dir: Path
     trained_model_path: Path
     model_name: str
-    registry_name: str
     best_params: dict
-    mlflow_uri: str
-    mlflow_experiment_name: str
+    mlflow_config: MlflowConfig
 
 
 @dataclass
 class ModelEvaluationConfig:
     root_dir: Path
     model_evaluation_report_path: Path
-    registry_name: str
-    prod_registry_name: str
-    mlflow_uri: str
-    mlflow_experiment_name: str
-
-
-# @dataclass
-# class ModelPusherConfig:
-#     root_dir: Path
-#     deployed_model_path: Path
-#     registry_name: str
-#     mlflow_uri: str
-#     mlflow_experiment_name: str
+    change_threshold: float
+    mlflow_config: MlflowConfig

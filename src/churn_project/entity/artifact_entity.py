@@ -25,9 +25,7 @@ class DataTransformationArtifact:
 
 @dataclass
 class ModelTrainerArtifact:
-    trained_model_path: Path
-    metric_score: float
-    model_name: str
+    registry_version: int
 
 
 @dataclass

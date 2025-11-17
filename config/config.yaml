@@ -15,7 +15,7 @@ data_ingestion:
 
 data_validation:
   root_dir: artifacts/data_validation
-  validation_report_path: artifacts/data_validation/status.json
+  validation_report_path: artifacts/data_validation/validation_status.json
 
 data_transformation:
   root_dir: artifacts/data_transformation
@@ -31,11 +31,11 @@ model_trainer:
 
 model_evaluation:
   root_dir: artifacts/model_evaluation
+  change_threshold: 0.005
   model_evaluation_report_path: artifacts/model_evaluation/evaluation_report.json
 
 mlflow:
   tracking_uri: "http://127.0.0.1:5000"
-  training_experiment_name: "Churn-Model-Training"
-  evaluation_experiment_name: "Churn-Model-Evaluation"
+  experiment_name: "Churn-Pipeline"
   registry_name: "churn_model"
   prod_registry_name: "prod.churn_model"

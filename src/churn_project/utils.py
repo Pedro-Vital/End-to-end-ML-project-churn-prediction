@@ -7,6 +7,7 @@ import joblib
 import yaml
 from box import ConfigBox
 from box.exceptions import BoxValueError
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 
 from churn_project.logger import logger
 
@@ -102,3 +103,18 @@ def get_size(path: Path) -> str:
     """
     size_in_kb = round(os.path.getsize(path) / 1024)
     return f"~ {size_in_kb} KB"
+
+
+def evaluate_clf(model, X, true) -> tuple:
+    y_pred = model.predict(X)
+    y_proba = model.predict_proba(X)[:, 1]
+
+    acc = accuracy_score(true, y_pred)
+    f1 = f1_score(true, y_pred)
+
+    if hasattr(model, "predict_proba"):
+        roc_auc = roc_auc_score(true, y_proba)
+    else:
+        roc_auc = roc_auc_score(true, y_pred)
+
+    return acc, f1, roc_auc

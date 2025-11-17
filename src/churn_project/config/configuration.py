@@ -5,6 +5,7 @@ from churn_project.entity.config_entity import (
     DataIngestionConfig,
     DataTransformationConfig,
     DataValidationConfig,
+    MlflowConfig,
     ModelEvaluationConfig,
     ModelTrainerConfig,
 )
@@ -24,6 +25,17 @@ class ConfigurationManager:
         self.schema = read_yaml(schema_filepath)
 
         create_directories([self.config.artifacts_root])
+
+    def get_mlflow_config(self) -> MlflowConfig:
+        mlflow_config = self.config.mlflow
+
+        mlflow_configuration = MlflowConfig(
+            tracking_uri=mlflow_config.tracking_uri,
+            experiment_name=mlflow_config.experiment_name,
+            registry_name=mlflow_config.registry_name,
+            prod_registry_name=mlflow_config.prod_registry_name,
+        )
+        return mlflow_configuration
 
     def get_data_ingestion_config(self) -> DataIngestionConfig:
         config = self.config.data_ingestion  # dict-like ConfigBox
@@ -80,8 +92,8 @@ class ConfigurationManager:
 
     def get_model_trainer_config(self) -> ModelTrainerConfig:
         config = self.config.model_trainer
-        mlflow_config = self.config.mlflow
         params = self.params
+        mlflow_config = self.get_mlflow_config()
 
         create_directories([config.root_dir])
 
@@ -89,25 +101,21 @@ class ConfigurationManager:
             root_dir=Path(config.root_dir),
             trained_model_path=Path(config.trained_model_path),
             model_name=config.model_name,
-            registry_name=mlflow_config.registry_name,
             best_params=params.get(config.model_name, {}),
-            mlflow_uri=mlflow_config.tracking_uri,
-            mlflow_experiment_name=mlflow_config.training_experiment_name,
+            mlflow_config=mlflow_config,
         )
         return model_trainer_config
 
     def get_model_evaluation_config(self) -> ModelEvaluationConfig:
         config = self.config.model_evaluation
-        mlflow_config = self.config.mlflow
+        mlflow_config = self.get_mlflow_config()
 
         create_directories([config.root_dir])
 
         model_evaluation_config = ModelEvaluationConfig(
             root_dir=Path(config.root_dir),
+            change_threshold=config.change_threshold,
             model_evaluation_report_path=Path(config.model_evaluation_report_path),
-            registry_name=mlflow_config.registry_name,
-            prod_registry_name=mlflow_config.prod_registry_name,
-            mlflow_uri=mlflow_config.tracking_uri,
-            mlflow_experiment_name=mlflow_config.evaluation_experiment_name,
+            mlflow_config=mlflow_config,
         )
         return model_evaluation_config

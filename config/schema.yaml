@@ -1,13 +1,13 @@
 columns:
   Attrition_Flag: object
-  Total_Relationship_Count: int64 #*
-  Credit_Limit: int64 #-
-  Total_Revolving_Bal: int64 #-*
-  Total_Amt_Chng_Q4_Q1: float64 #-
-  Total_Trans_Amt: int64 #-*
-  Total_Trans_Ct: int64 #*
-  Total_Ct_Chng_Q4_Q1: float64 #*
-  Avg_Utilization_Ratio: float64 #-
+  Total_Relationship_Count: int64
+  Credit_Limit: int64
+  Total_Revolving_Bal: int64
+  Total_Amt_Chng_Q4_Q1: float64
+  Total_Trans_Amt: int64
+  Total_Trans_Ct: int64
+  Total_Ct_Chng_Q4_Q1: float64
+  Avg_Utilization_Ratio: float64
 
 target_column: Attrition_Flag
 
