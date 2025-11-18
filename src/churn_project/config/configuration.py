@@ -7,6 +7,7 @@ from churn_project.entity.config_entity import (
     DataValidationConfig,
     MlflowConfig,
     ModelEvaluationConfig,
+    ModelPusherConfig,
     ModelTrainerConfig,
 )
 from churn_project.utils import create_directories, read_yaml
@@ -119,3 +120,11 @@ class ConfigurationManager:
             mlflow_config=mlflow_config,
         )
         return model_evaluation_config
+
+    def get_model_pusher_config(self) -> ModelPusherConfig:
+        mlflow_config = self.get_mlflow_config()
+
+        model_pusher_config = ModelPusherConfig(
+            mlflow_config=mlflow_config,
+        )
+        return model_pusher_config

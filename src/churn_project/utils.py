@@ -107,12 +107,12 @@ def get_size(path: Path) -> str:
 
 def evaluate_clf(model, X, true) -> tuple:
     y_pred = model.predict(X)
-    y_proba = model.predict_proba(X)[:, 1]
 
     acc = accuracy_score(true, y_pred)
     f1 = f1_score(true, y_pred)
 
     if hasattr(model, "predict_proba"):
+        y_proba = model.predict_proba(X)[:, 1]
         roc_auc = roc_auc_score(true, y_proba)
     else:
         roc_auc = roc_auc_score(true, y_pred)

@@ -78,14 +78,6 @@ class ModelTrainer:
             # The version is in the model_info
             version = model_info.registered_model_version
 
-            # Set governance tag
-            self.client.set_model_version_tag(
-                name=self.mlflow_config.registry_name,
-                version=version,
-                key="validation_status",
-                value="pending",
-            )
-
             # Set alias for easy reference
             self.client.set_registered_model_alias(
                 name=self.mlflow_config.registry_name,
@@ -96,9 +88,7 @@ class ModelTrainer:
             # Log registry version in the run
             mlflow.log_param("registry_version", version)
 
-            logger.info(
-                f"Registered model version {version} tagged as pending validation."
-            )
+            logger.info(f"Registered model version {version}.")
 
             # Save the trained model locally just as fallback option
             logger.info("Saving the trained model locally.")

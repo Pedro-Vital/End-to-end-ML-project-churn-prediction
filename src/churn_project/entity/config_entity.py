@@ -58,3 +58,8 @@ class ModelEvaluationConfig:
     model_evaluation_report_path: Path
     change_threshold: float
     mlflow_config: MlflowConfig
+
+
+@dataclass
+class ModelPusherConfig:
+    mlflow_config: MlflowConfig

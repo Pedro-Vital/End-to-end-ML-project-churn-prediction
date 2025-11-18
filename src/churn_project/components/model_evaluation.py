@@ -46,35 +46,6 @@ class ModelEvaluation:
             raise CustomException(e, sys)
         return production_model, new_model
 
-    def promote_model(self, model_trainer_artifact: ModelTrainerArtifact):
-        logger.info("Promoting model to production stage.")
-        # 1. Tag model as approved in MLflow
-        self.client.set_model_version_tag(
-            name=self.mlflow_config.registry_name,
-            version=model_trainer_artifact.registry_version,
-            key="validation_status",
-            value="approved",
-        )
-
-        # 2. Copy to production environment
-        new_model_uri = f"models:/{self.mlflow_config.registry_name}/{model_trainer_artifact.registry_version}"
-        dst_name = self.mlflow_config.prod_registry_name
-        logger.info(
-            f"Copying model version from {new_model_uri} to registry {dst_name}"
-        )
-        dst_version = self.client.copy_model_version(
-            src_model_uri=new_model_uri,
-            dst_name=dst_name,
-        )
-        logger.info(f"Copied version to {dst_name} as {dst_version.version}")
-
-        # 3. Assign alias 'champion' to the promoted model version
-        self.client.set_registered_model_alias(
-            name=dst_name,
-            alias="champion",
-            version=dst_version.version,
-        )
-
     def initiate_model_evaluation(
         self,
         data_transformation_artifact: DataTransformationArtifact,
@@ -111,22 +82,12 @@ class ModelEvaluation:
             new_acc, new_f1, new_auc = evaluate_clf(new_model, X_test, y_test)
             logger.info(f"New model AUC: {new_auc:.4f}")
 
-            # Compare models and promote if better
-            # Adding epsilon to avoid noise issues
+            # Compare models adding epsilon to avoid noise issues
             is_model_accepted = new_auc > (prod_auc + self.config.change_threshold)
             if is_model_accepted:
-                logger.info("New model outperforms the production model. Promoting.")
-                self.promote_model(model_trainer_artifact)
+                logger.info("New model outperforms the production model.")
             else:
-                logger.info(
-                    "New model does not outperform the production model. Rejecting."
-                )
-                self.client.set_model_version_tag(
-                    name=self.mlflow_config.registry_name,
-                    version=model_trainer_artifact.registry_version,
-                    key="validation_status",
-                    value="rejected",
-                )
+                logger.info("New model does not outperform the production model.")
 
             evaluation_report = {
                 "production_model_accuracy": prod_acc,
