@@ -51,6 +51,13 @@ class ModelTrainer:
                 artifact_file="feature_names.json",
             )
 
+            # Log preprocessor
+            preprocessor = joblib.load(data_transformation_artifact.preprocessor_path)
+            mlflow.sklearn.log_model(
+                preprocessor,
+                artifact_path="preprocessor",
+            )
+
             # Train the model
             model = model_class(**self.config.best_params)
             model.fit(X_train, y_train)
@@ -77,13 +84,6 @@ class ModelTrainer:
 
             # The version is in the model_info
             version = model_info.registered_model_version
-
-            # Set alias for easy reference
-            self.client.set_registered_model_alias(
-                name=self.mlflow_config.registry_name,
-                alias="challenger",
-                version=version,
-            )
 
             # Log registry version in the run
             mlflow.log_param("registry_version", version)
