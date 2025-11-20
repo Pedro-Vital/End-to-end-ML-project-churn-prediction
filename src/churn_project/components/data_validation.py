@@ -78,7 +78,7 @@ class DataValidation:
             logger.info("Starting data validation process")
 
             # Load the ingested data
-            data = pd.read_csv(data_ingestion_artifact.feature_store_file_path)
+            data = pd.read_csv(data_ingestion_artifact.raw_data_path)
 
             # Validate columns
             is_column_valid = self.validate_columns(data)

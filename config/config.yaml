@@ -7,9 +7,9 @@ data_ingestion:
   db_name: "bank_db"
   base_query: "SELECT {} FROM churners;"
   root_dir: artifacts/data_ingestion
-  feature_store_file_path: artifacts/data_ingestion/feature_store.csv
-  training_file_path: artifacts/data_ingestion/ingested/train.csv
-  testing_file_path: artifacts/data_ingestion/ingested/test.csv
+  raw_data_path: artifacts/data_ingestion/raw_data.csv
+  training_path: artifacts/data_ingestion/ingested/train.csv
+  testing_path: artifacts/data_ingestion/ingested/test.csv
   train_test_split_ratio: 0.2
   random_state: 42
 

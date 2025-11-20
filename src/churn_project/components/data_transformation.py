@@ -87,8 +87,8 @@ class DataTransformation:
         try:
             logger.info("Starting data transformation process")
 
-            train_df = pd.read_csv(data_ingestion_artifact.training_file_path)
-            test_df = pd.read_csv(data_ingestion_artifact.testing_file_path)
+            train_df = pd.read_csv(data_ingestion_artifact.training_path)
+            test_df = pd.read_csv(data_ingestion_artifact.testing_path)
 
             logger.info("Read train and test data completed")
 
@@ -144,6 +144,7 @@ class DataTransformation:
                 transformed_test_path=self.config.transformed_test_path,
                 preprocessor_path=self.config.preprocessor_path,
                 feature_names=feature_names,
+                raw_data_path=data_ingestion_artifact.raw_data_path,
             )
 
         except Exception as e:

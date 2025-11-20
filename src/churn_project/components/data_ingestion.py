@@ -21,7 +21,7 @@ class DataIngestion:
         try:
             logger.info("Starting data ingestion process")
 
-            os.makedirs(self.config.feature_store_file_path.parent, exist_ok=True)
+            os.makedirs(self.config.raw_data_path.parent, exist_ok=True)
 
             # Build SQLAlchemy engine
             engine = create_engine(
@@ -42,10 +42,10 @@ class DataIngestion:
                 f"Data fetched successfully: {df.shape[0]} rows, {df.shape[1]} columns"
             )
 
-            df.to_csv(self.config.feature_store_file_path, index=False)
+            df.to_csv(self.config.raw_data_path, index=False)
             logger.info(
-                f"Data saved to {self.config.feature_store_file_path} "
-                f"({get_size(self.config.feature_store_file_path)})"
+                f"Data saved to {self.config.raw_data_path} "
+                f"({get_size(self.config.raw_data_path)})"
             )
 
         except Exception as e:
@@ -56,8 +56,8 @@ class DataIngestion:
         """Split data into training and testing sets"""
         try:
 
-            logger.info("Reading data from feature store for splitting")
-            df = pd.read_csv(self.config.feature_store_file_path)
+            logger.info("Reading data from raw data file for splitting")
+            df = pd.read_csv(self.config.raw_data_path)
 
             logger.info("Splitting data into training and testing sets")
             train_df, test_df = train_test_split(
@@ -67,17 +67,17 @@ class DataIngestion:
             )
 
             # Save training data
-            os.makedirs(self.config.training_file_path.parent, exist_ok=True)
-            train_df.to_csv(self.config.training_file_path, index=False)
+            os.makedirs(self.config.training_path.parent, exist_ok=True)
+            train_df.to_csv(self.config.training_path, index=False)
             logger.info(
-                f"Training data saved to {self.config.training_file_path} with size {get_size(self.config.training_file_path)}"
+                f"Training data saved to {self.config.training_path} with size {get_size(self.config.training_path)}"
             )
 
             # Save testing data
-            os.makedirs(self.config.testing_file_path.parent, exist_ok=True)
-            test_df.to_csv(self.config.testing_file_path, index=False)
+            os.makedirs(self.config.testing_path.parent, exist_ok=True)
+            test_df.to_csv(self.config.testing_path, index=False)
             logger.info(
-                f"Testing data saved to {self.config.testing_file_path} with size {get_size(self.config.testing_file_path)}"
+                f"Testing data saved to {self.config.testing_path} with size {get_size(self.config.testing_path)}"
             )
 
         except Exception as e:
@@ -90,7 +90,7 @@ class DataIngestion:
         self.split_data()
 
         return DataIngestionArtifact(
-            training_file_path=self.config.training_file_path,
-            testing_file_path=self.config.testing_file_path,
-            feature_store_file_path=self.config.feature_store_file_path,
+            training_path=self.config.training_path,
+            testing_path=self.config.testing_path,
+            raw_data_path=self.config.raw_data_path,
         )

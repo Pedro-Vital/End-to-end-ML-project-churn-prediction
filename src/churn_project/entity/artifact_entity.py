@@ -4,9 +4,9 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class DataIngestionArtifact:
-    training_file_path: Path
-    testing_file_path: Path
-    feature_store_file_path: Path
+    training_path: Path
+    testing_path: Path
+    raw_data_path: Path
 
 
 @dataclass
@@ -21,6 +21,7 @@ class DataTransformationArtifact:
     transformed_test_path: Path
     preprocessor_path: Path
     feature_names: list
+    raw_data_path: Path
 
 
 @dataclass

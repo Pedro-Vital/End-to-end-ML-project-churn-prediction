@@ -17,9 +17,9 @@ class DataIngestionConfig:
     db_password: str
     db_name: str
     base_query: str
-    feature_store_file_path: Path
-    training_file_path: Path
-    testing_file_path: Path
+    raw_data_path: Path
+    training_path: Path
+    testing_path: Path
     train_test_split_ratio: float
     random_state: int
     columns: dict
