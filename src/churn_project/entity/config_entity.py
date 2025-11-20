@@ -46,8 +46,8 @@ class DataTransformationConfig:
 @dataclass
 class ModelTrainerConfig:
     root_dir: Path
-    trained_model_path: Path
     model_name: str
+    target_column: str
     best_params: dict
     mlflow_config: MlflowConfig
 
@@ -55,6 +55,7 @@ class ModelTrainerConfig:
 @dataclass
 class ModelEvaluationConfig:
     root_dir: Path
+    target_column: str
     model_evaluation_report_path: Path
     change_threshold: float
     mlflow_config: MlflowConfig

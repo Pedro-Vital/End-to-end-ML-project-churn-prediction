@@ -1,7 +1,7 @@
 import sys
 
 import mlflow
-import numpy as np
+import pandas as pd
 
 from churn_project.entity.artifact_entity import (
     DataTransformationArtifact,
@@ -54,10 +54,12 @@ class ModelEvaluation:
         try:
             logger.info("Starting model evaluation process.")
 
-            # Load transformed test data
-            test_arr = np.load(data_transformation_artifact.transformed_test_path)
-            X_test = test_arr[:, :-1]
-            y_test = test_arr[:, -1]
+            # Load raw test data
+            test_df = pd.read_csv(data_transformation_artifact.raw_test_path)
+            X_test = test_df.drop(columns=[self.config.target_column], axis=1)
+            y_test = test_df[self.config.target_column].map(
+                {"Attrited Customer": 1, "Existing Customer": 0}
+            )
 
             # Log evaluation context
             mlflow.set_tag("developer", "Pedro")

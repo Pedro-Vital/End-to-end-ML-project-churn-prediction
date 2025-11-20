@@ -75,8 +75,6 @@ class ConfigurationManager:
 
     def get_data_transformation_config(self) -> DataTransformationConfig:
         config = self.config.data_transformation
-        target_column = self.schema.target_column  # target str
-        drop_columns = self.schema.drop_columns  # list of str
 
         create_directories([config.root_dir])
 
@@ -85,8 +83,8 @@ class ConfigurationManager:
             transformed_train_path=Path(config.transformed_train_path),
             transformed_test_path=Path(config.transformed_test_path),
             preprocessor_path=Path(config.preprocessor_path),
-            target_column=target_column,
-            drop_columns=drop_columns,
+            target_column=self.schema.target_column,  # target str
+            drop_columns=self.schema.drop_columns,  # list of str
             random_state=config.random_state,
         )
         return data_transformation_config
@@ -100,8 +98,8 @@ class ConfigurationManager:
 
         model_trainer_config = ModelTrainerConfig(
             root_dir=Path(config.root_dir),
-            trained_model_path=Path(config.trained_model_path),
             model_name=config.model_name,
+            target_column=self.schema.target_column,
             best_params=params.get(config.model_name, {}),
             mlflow_config=mlflow_config,
         )
@@ -116,6 +114,7 @@ class ConfigurationManager:
         model_evaluation_config = ModelEvaluationConfig(
             root_dir=Path(config.root_dir),
             change_threshold=config.change_threshold,
+            target_column=self.schema.target_column,
             model_evaluation_report_path=Path(config.model_evaluation_report_path),
             mlflow_config=mlflow_config,
         )

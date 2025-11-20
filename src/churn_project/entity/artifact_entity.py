@@ -18,10 +18,10 @@ class DataValidationArtifact:
 @dataclass
 class DataTransformationArtifact:
     transformed_train_path: Path
-    transformed_test_path: Path
     preprocessor_path: Path
     feature_names: list
-    raw_data_path: Path
+    raw_train_path: Path
+    raw_test_path: Path
 
 
 @dataclass

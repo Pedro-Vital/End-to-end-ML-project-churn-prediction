@@ -3,7 +3,9 @@ import sys
 import joblib
 import mlflow
 import numpy as np
+import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.pipeline import Pipeline
 from xgboost import XGBClassifier
 
 from churn_project.entity.artifact_entity import (
@@ -32,7 +34,6 @@ class ModelTrainer:
 
             # Load transformed data
             train_arr = np.load(data_transformation_artifact.transformed_train_path)
-
             X_train = train_arr[:, :-1]
             y_train = train_arr[:, -1]
 
@@ -40,7 +41,6 @@ class ModelTrainer:
                 "XGBClassifier": XGBClassifier,
                 "RandomForestClassifier": RandomForestClassifier,
             }
-
             model_class = model_map[self.config.model_name]
 
             # Log training parameters and context
@@ -51,12 +51,8 @@ class ModelTrainer:
                 artifact_file="feature_names.json",
             )
 
-            # Log preprocessor
+            # Load preprocessor
             preprocessor = joblib.load(data_transformation_artifact.preprocessor_path)
-            mlflow.sklearn.log_model(
-                preprocessor,
-                artifact_path="preprocessor",
-            )
 
             # Train the model
             model = model_class(**self.config.best_params)
@@ -64,8 +60,6 @@ class ModelTrainer:
 
             # Evaluate the model on training data
             train_acc, train_f1, train_auc = evaluate_clf(model, X_train, y_train)
-
-            # Log evaluation metrics
             mlflow.log_metrics(
                 {
                     "train_accuracy": train_acc,
@@ -73,12 +67,26 @@ class ModelTrainer:
                     "train_roc_auc": train_auc,
                 }
             )
+            # Build inference pipeline
+            inference_pipeline = Pipeline(
+                steps=[
+                    ("preprocessor", preprocessor),
+                    ("model", model),
+                ]
+            )
+
+            raw_example = pd.read_csv(data_transformation_artifact.raw_train_path).head(
+                5
+            )
+            input_example = raw_example.drop(
+                columns=[self.config.target_column], axis=1
+            ).astype("float64")
 
             # Log and register the model to MLflow
             model_info = mlflow.sklearn.log_model(
-                model,
-                name="model",
-                input_example=X_train[:5],
+                inference_pipeline,
+                name="inference_pipeline",
+                input_example=input_example,
                 registered_model_name=self.mlflow_config.registry_name,
             )
 
@@ -89,10 +97,6 @@ class ModelTrainer:
             mlflow.log_param("registry_version", version)
 
             logger.info(f"Registered model version {version}.")
-
-            # Save the trained model locally just as fallback option
-            logger.info("Saving the trained model locally.")
-            joblib.dump(model, self.config.trained_model_path)
 
             logger.info("Model training process completed.")
             return ModelTrainerArtifact(

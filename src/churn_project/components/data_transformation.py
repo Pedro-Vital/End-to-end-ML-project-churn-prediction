@@ -78,7 +78,7 @@ class DataTransformation:
     ) -> DataTransformationArtifact:
         """
         Executes data transformation:
-        - Loads raw train/test data
+        - Loads raw train data
         - Applies feature engineering and scaling
         - Balances training data using SMOTE
         - Saves transformed data and preprocessor
@@ -88,19 +88,14 @@ class DataTransformation:
             logger.info("Starting data transformation process")
 
             train_df = pd.read_csv(data_ingestion_artifact.training_path)
-            test_df = pd.read_csv(data_ingestion_artifact.testing_path)
 
-            logger.info("Read train and test data completed")
+            logger.info("Read train data completed")
 
             target_column = self.config.target_column
 
             # Split into X and y
             X_train = train_df.drop(columns=[target_column], axis=1)
             y_train = train_df[target_column].map(
-                {"Attrited Customer": 1, "Existing Customer": 0}
-            )
-            X_test = test_df.drop(columns=[target_column], axis=1)
-            y_test = test_df[target_column].map(
                 {"Attrited Customer": 1, "Existing Customer": 0}
             )
 
@@ -110,7 +105,7 @@ class DataTransformation:
 
             logger.info("Fitting and transforming training data.")
             X_train_transformed = preprocessor.fit_transform(X_train)
-            X_test_transformed = preprocessor.transform(X_test)
+            # X_test_transformed = preprocessor.transform(X_test)
 
             # Getting feature names after transformation
             feature_names = (
@@ -126,13 +121,10 @@ class DataTransformation:
                 X_train_transformed, y_train
             )
 
-            logger.info("Saving train and test data arrays.")
+            logger.info("Saving train data array.")
             train_arr = np.c_[X_train_resampled, y_train_resampled]
-            test_arr = np.c_[X_test_transformed, y_test]
             os.makedirs(Path(self.config.transformed_train_path).parent, exist_ok=True)
-            os.makedirs(Path(self.config.transformed_test_path).parent, exist_ok=True)
             np.save(self.config.transformed_train_path, train_arr)
-            np.save(self.config.transformed_test_path, test_arr)
 
             logger.info("Saving preprocessor object.")
             joblib.dump(preprocessor, self.config.preprocessor_path)
@@ -141,10 +133,10 @@ class DataTransformation:
 
             return DataTransformationArtifact(
                 transformed_train_path=self.config.transformed_train_path,
-                transformed_test_path=self.config.transformed_test_path,
                 preprocessor_path=self.config.preprocessor_path,
                 feature_names=feature_names,
-                raw_data_path=data_ingestion_artifact.raw_data_path,
+                raw_train_path=data_ingestion_artifact.training_path,
+                raw_test_path=data_ingestion_artifact.testing_path,
             )
 
         except Exception as e:
