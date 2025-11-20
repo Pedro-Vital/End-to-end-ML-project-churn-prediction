@@ -11,7 +11,7 @@ from churn_project.entity.artifact_entity import (
 from churn_project.entity.config_entity import ModelEvaluationConfig
 from churn_project.exception import CustomException
 from churn_project.logger import logger
-from churn_project.utils import evaluate_clf, save_json
+from churn_project.utils import evaluate_clf
 
 
 class ModelEvaluation:
@@ -61,12 +61,6 @@ class ModelEvaluation:
                 {"Attrited Customer": 1, "Existing Customer": 0}
             )
 
-            # Log evaluation context
-            mlflow.set_tag("developer", "Pedro")
-            mlflow.log_param(
-                "registry_version", model_trainer_artifact.registry_version
-            )
-
             # Load models for evaluation
             production_model, new_model = self.load_models(model_trainer_artifact)
 
@@ -101,12 +95,6 @@ class ModelEvaluation:
                 "is_model_accepted": is_model_accepted,
             }
 
-            # Save evaluation report
-            save_json(self.config.model_evaluation_report_path, evaluation_report)
-            logger.info(
-                f"Model evaluation report saved at {self.config.model_evaluation_report_path}"
-            )
-
             # Log evaluation report and metrics to MLflow
             mlflow.log_dict(evaluation_report, "evaluation_report.json")
             mlflow.log_metrics(
@@ -114,7 +102,8 @@ class ModelEvaluation:
                     "test_accuracy": new_acc,
                     "test_f1_score": new_f1,
                     "test_roc_auc": new_auc,
-                }
+                },
+                run_id=mlflow.active_run().info.run_id,
             )
             mlflow.set_tag("is_model_accepted", str(is_model_accepted))
 

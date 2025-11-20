@@ -43,8 +43,7 @@ class ModelTrainer:
             }
             model_class = model_map[self.config.model_name]
 
-            # Log training parameters and context
-            mlflow.set_tag("developer", "Pedro")
+            # Log training parameters and features
             mlflow.log_params(self.config.best_params)
             mlflow.log_dict(
                 {"feature_names": data_transformation_artifact.feature_names},
@@ -75,9 +74,8 @@ class ModelTrainer:
                 ]
             )
 
-            raw_example = pd.read_csv(data_transformation_artifact.raw_train_path).head(
-                5
-            )
+            raw_example = pd.read_csv(data_transformation_artifact.raw_train_path)
+            raw_example = raw_example.head(5)
             input_example = raw_example.drop(
                 columns=[self.config.target_column], axis=1
             ).astype("float64")

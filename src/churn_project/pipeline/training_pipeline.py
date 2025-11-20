@@ -7,6 +7,7 @@ from churn_project.components.data_ingestion import DataIngestion
 from churn_project.components.data_transformation import DataTransformation
 from churn_project.components.data_validation import DataValidation
 from churn_project.components.model_evaluation import ModelEvaluation
+from churn_project.components.model_pusher import ModelPusher
 from churn_project.components.model_trainer import ModelTrainer
 from churn_project.config.configuration import ConfigurationManager
 from churn_project.entity.artifact_entity import (
@@ -14,6 +15,7 @@ from churn_project.entity.artifact_entity import (
     DataTransformationArtifact,
     DataValidationArtifact,
     ModelEvaluationArtifact,
+    ModelPusherArtifact,
     ModelTrainerArtifact,
 )
 from churn_project.exception import CustomException
@@ -31,6 +33,7 @@ class TrainingPipeline:
         )
         self.model_trainer_config = config_manager.get_model_trainer_config()
         self.model_evaluation_config = config_manager.get_model_evaluation_config()
+        self.model_pusher_config = config_manager.get_model_pusher_config()
 
     def start_data_ingestion(self) -> DataIngestionArtifact:
         """
@@ -81,11 +84,8 @@ class TrainingPipeline:
         """
         try:
             if not data_validation_artifact.validation_status:
-                raise CustomException(
-                    Exception(
-                        "Data validation failed. Cannot proceed to data transformation."
-                    ),
-                    sys,
+                raise Exception(
+                    "Data validation failed. Cannot proceed to data transformation."
                 )
 
             logger.info(
@@ -153,6 +153,30 @@ class TrainingPipeline:
             logger.error(f"Error in model evaluation component: {e}")
             raise CustomException(e, sys)
 
+    def start_model_pusher(
+        self,
+        model_evaluation_artifact: ModelEvaluationArtifact,
+        model_trainer_artifact: ModelTrainerArtifact,
+    ) -> ModelPusherArtifact:
+        """
+        This method starts the model pusher component of the training pipeline.
+        """
+        try:
+            logger.info("Starting model pusher component of the training pipeline.")
+
+            model_pusher = ModelPusher(config=self.model_pusher_config)
+            model_pusher_artifact = model_pusher.initiate_model_pusher(
+                model_evaluation_artifact=model_evaluation_artifact,
+                model_trainer_artifact=model_trainer_artifact,
+            )
+
+            logger.info("Model pusher component completed successfully.")
+            return model_pusher_artifact
+
+        except Exception as e:
+            logger.error(f"Error in model pusher component: {e}")
+            raise CustomException(e, sys)
+
     def run_pipeline(
         self,
     ) -> Tuple[
@@ -161,6 +185,7 @@ class TrainingPipeline:
         DataTransformationArtifact,
         ModelTrainerArtifact,
         ModelEvaluationArtifact,
+        ModelPusherArtifact,
     ]:
         """Run the entire training pipeline"""
         try:
@@ -171,6 +196,7 @@ class TrainingPipeline:
             mlflow.set_experiment(self.mlflow_config.experiment_name)
 
             with mlflow.start_run(run_name="Pipeline_Run"):
+                mlflow.set_tag("developer", "Pedro")
 
                 data_ingestion_artifact = self.start_data_ingestion()
                 data_validation_artifact = self.start_data_validation(
@@ -179,16 +205,15 @@ class TrainingPipeline:
                 data_transformation_artifact = self.start_data_transformation(
                     data_validation_artifact, data_ingestion_artifact
                 )
-
-                with mlflow.start_run(run_name="Model_Training", nested=True):
-                    model_trainer_artifact = self.start_model_trainer(
-                        data_transformation_artifact
-                    )
-
-                with mlflow.start_run(run_name="Model_Evaluation", nested=True):
-                    model_evaluation_artifact = self.start_model_evaluation(
-                        data_transformation_artifact, model_trainer_artifact
-                    )
+                model_trainer_artifact = self.start_model_trainer(
+                    data_transformation_artifact
+                )
+                model_evaluation_artifact = self.start_model_evaluation(
+                    data_transformation_artifact, model_trainer_artifact
+                )
+                model_pusher_artifact = self.start_model_pusher(
+                    model_evaluation_artifact, model_trainer_artifact
+                )
 
             logger.info("Training pipeline completed successfully")
             return (
@@ -197,6 +222,7 @@ class TrainingPipeline:
                 data_transformation_artifact,
                 model_trainer_artifact,
                 model_evaluation_artifact,
+                model_pusher_artifact,
             )
 
         except Exception as e:

@@ -33,3 +33,8 @@ class ModelTrainerArtifact:
 class ModelEvaluationArtifact:
     is_model_accepted: bool
     model_evaluation_report_path: Path
+
+
+@dataclass
+class ModelPusherArtifact:
+    promoted: dict

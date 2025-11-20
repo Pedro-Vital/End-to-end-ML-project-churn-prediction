@@ -4,6 +4,7 @@ import mlflow
 
 from churn_project.entity.artifact_entity import (
     ModelEvaluationArtifact,
+    ModelPusherArtifact,
     ModelTrainerArtifact,
 )
 from churn_project.entity.config_entity import ModelPusherConfig
@@ -55,7 +56,7 @@ class ModelPusher:
         self,
         model_evaluation_artifact: ModelEvaluationArtifact,
         model_trainer_artifact: ModelTrainerArtifact,
-    ) -> dict:
+    ) -> ModelPusherArtifact:
         try:
             logger.info("Starting model pusher process.")
 
@@ -77,7 +78,7 @@ class ModelPusher:
 
             logger.info("Model pusher process completed successfully.")
 
-            return promoted
+            return ModelPusherArtifact(promoted=promoted)
         except Exception as e:
             logger.error(f"Error in model pusher process: {e}")
             raise CustomException(e, sys)

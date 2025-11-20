@@ -27,14 +27,12 @@ class DataIngestionConfig:
 
 @dataclass(frozen=True)
 class DataValidationConfig:
-    root_dir: Path
     validation_report_path: Path
     columns: dict
 
 
 @dataclass
 class DataTransformationConfig:
-    root_dir: Path
     transformed_train_path: Path
     transformed_test_path: Path
     preprocessor_path: Path
@@ -45,7 +43,6 @@ class DataTransformationConfig:
 
 @dataclass
 class ModelTrainerConfig:
-    root_dir: Path
     model_name: str
     target_column: str
     best_params: dict
@@ -54,7 +51,6 @@ class ModelTrainerConfig:
 
 @dataclass
 class ModelEvaluationConfig:
-    root_dir: Path
     target_column: str
     model_evaluation_report_path: Path
     change_threshold: float

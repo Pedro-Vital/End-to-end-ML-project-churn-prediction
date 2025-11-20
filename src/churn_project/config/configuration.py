@@ -67,7 +67,6 @@ class ConfigurationManager:
         create_directories([config.root_dir])
 
         data_validation_config = DataValidationConfig(
-            root_dir=Path(config.root_dir),
             validation_report_path=Path(config.validation_report_path),
             columns=columns,
         )
@@ -79,7 +78,6 @@ class ConfigurationManager:
         create_directories([config.root_dir])
 
         data_transformation_config = DataTransformationConfig(
-            root_dir=Path(config.root_dir),
             transformed_train_path=Path(config.transformed_train_path),
             transformed_test_path=Path(config.transformed_test_path),
             preprocessor_path=Path(config.preprocessor_path),
@@ -94,10 +92,7 @@ class ConfigurationManager:
         params = self.params
         mlflow_config = self.get_mlflow_config()
 
-        create_directories([config.root_dir])
-
         model_trainer_config = ModelTrainerConfig(
-            root_dir=Path(config.root_dir),
             model_name=config.model_name,
             target_column=self.schema.target_column,
             best_params=params.get(config.model_name, {}),
@@ -109,10 +104,7 @@ class ConfigurationManager:
         config = self.config.model_evaluation
         mlflow_config = self.get_mlflow_config()
 
-        create_directories([config.root_dir])
-
         model_evaluation_config = ModelEvaluationConfig(
-            root_dir=Path(config.root_dir),
             change_threshold=config.change_threshold,
             target_column=self.schema.target_column,
             model_evaluation_report_path=Path(config.model_evaluation_report_path),

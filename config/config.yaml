@@ -25,11 +25,9 @@ data_transformation:
   random_state: 42
 
 model_trainer:
-  root_dir: artifacts/model_trainer
   model_name: "XGBClassifier"
 
 model_evaluation:
-  root_dir: artifacts/model_evaluation
   change_threshold: 0.005
   model_evaluation_report_path: artifacts/model_evaluation/evaluation_report.json
 
