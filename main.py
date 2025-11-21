@@ -1,5 +1,4 @@
-from churn_project.pipeline.training_pipeline import TrainingPipeline
+from churn_project.orchestrator.training_flow import training_flow
 
 if __name__ == "__main__":
-    pipeline = TrainingPipeline()
-    pipeline.run_pipeline()
+    training_flow()
