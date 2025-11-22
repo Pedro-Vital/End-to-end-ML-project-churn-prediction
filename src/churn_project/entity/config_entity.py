@@ -60,3 +60,8 @@ class ModelEvaluationConfig:
 @dataclass
 class ModelPusherConfig:
     mlflow_config: MlflowConfig
+
+
+@dataclass
+class ModelPredictorConfig:
+    mlflow_config: MlflowConfig
