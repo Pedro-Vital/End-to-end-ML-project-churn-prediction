@@ -29,6 +29,10 @@ class PredictionService:
 
         logger.info("PredictionService initialized.")
 
+    @property
+    def version(self):
+        return self.model_version
+
     # Internal Model Loader
     def _load_model(self):
         """Load champion inference pipeline from MLflow."""
@@ -46,7 +50,7 @@ class PredictionService:
             try:
                 info = mlflow.models.get_model_info(model_uri)
                 version = info.model_version
-                logger.info(f"Loaded model version: {self.model_version}")
+                logger.info(f"Loaded model version: {version}")
             except Exception as e:
                 logger.warning(f"Could not read model version: {e}")
                 version = "unknown"
