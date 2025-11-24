@@ -7,7 +7,6 @@ from churn_project.entity.config_entity import (
     DataValidationConfig,
     MlflowConfig,
     ModelEvaluationConfig,
-    ModelPredictorConfig,
     ModelPusherConfig,
     ModelTrainerConfig,
 )
@@ -120,11 +119,3 @@ class ConfigurationManager:
             mlflow_config=mlflow_config,
         )
         return model_pusher_config
-
-    def get_model_predictor_config(self) -> ModelPredictorConfig:
-        mlflow_config = self.get_mlflow_config()
-
-        model_predictor_config = ModelPredictorConfig(
-            mlflow_config=mlflow_config,
-        )
-        return model_predictor_config

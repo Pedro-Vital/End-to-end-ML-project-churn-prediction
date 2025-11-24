@@ -1,8 +1,8 @@
 import pandas as pd
 import pytest
 
-from churn_project.entity.config_entity import MlflowConfig, ModelPredictorConfig
-from churn_project.predictor.predict import ModelPredictor
+from churn_project.entity.config_entity import MlflowConfig
+from churn_project.inference.prediction_service import PredictionService
 
 
 @pytest.fixture
@@ -17,15 +17,9 @@ def mlflow_config():
 
 
 @pytest.fixture
-def predictor_config(mlflow_config):
-    """Fixture for ModelPredictor config."""
-    return ModelPredictorConfig(mlflow_config=mlflow_config)
-
-
-@pytest.fixture
-def predictor(predictor_config):
-    """Fixture that returns a ModelPredictor instance."""
-    return ModelPredictor(predictor_config)
+def predictor(mlflow_config):
+    """Fixture that returns a PredictionService instance."""
+    return PredictionService(mlflow_config)
 
 
 @pytest.fixture
