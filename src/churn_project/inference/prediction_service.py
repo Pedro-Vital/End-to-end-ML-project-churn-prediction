@@ -25,13 +25,13 @@ class PredictionService:
             mlflow_config: MlflowConfig containing MLflow configuration
         """
         self.mlflow_config = mlflow_config
-        self.model, self.model_version = self._load_model()
+        self.model, self._model_version = self._load_model()
 
         logger.info("PredictionService initialized.")
 
     @property
-    def version(self):
-        return self.model_version
+    def model_version(self):
+        return self._model_version
 
     # Internal Model Loader
     def _load_model(self):
@@ -49,13 +49,13 @@ class PredictionService:
             # Try to extract version
             try:
                 info = mlflow.models.get_model_info(model_uri)
-                version = info.model_version
-                logger.info(f"Loaded model version: {version}")
+                model_version = info.model_version
+                logger.info(f"Loaded model version: {model_version}")
             except Exception as e:
                 logger.warning(f"Could not read model version: {e}")
-                version = "unknown"
+                model_version = "unknown"
             logger.info("Inference pipeline loaded successfully.")
-            return model, version
+            return model, model_version
 
         except Exception as e:
             logger.error(f"Error while loading model: {e}")
@@ -78,14 +78,14 @@ class PredictionService:
 
             response = {
                 "predictions": predictions_list,
-                "model_version": self.model_version,
+                "model_version": self._model_version,
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "num_samples": len(predictions_list),
             }
 
             logger.info(
                 f"Prediction completed. Samples: {len(predictions_list)}, "
-                f"Model version: {self.model_version}"
+                f"Model version: {self._model_version}"
             )
 
             return response
