@@ -91,9 +91,6 @@ class ModelTrainer:
             # The version is in the model_info
             version = model_info.registered_model_version
 
-            # Log registry version in the run
-            mlflow.log_param("registry_version", version)
-
             logger.info(f"Registered model version {version}.")
 
             logger.info("Model training process completed.")
