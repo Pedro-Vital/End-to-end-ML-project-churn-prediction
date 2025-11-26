@@ -3,6 +3,7 @@ from datetime import datetime
 
 import mlflow
 import pandas as pd
+from mlflow.tracking import MlflowClient
 
 from churn_project.entity.config_entity import MlflowConfig
 from churn_project.exception import CustomException
@@ -48,8 +49,11 @@ class PredictionService:
 
             # Try to extract version
             try:
-                info = mlflow.models.get_model_info(model_uri)
-                model_version = info.model_version
+                client = MlflowClient(tracking_uri=self.mlflow_config.tracking_uri)
+                model_version_by_alias = client.get_model_version_by_alias(
+                    name=self.mlflow_config.prod_registry_name, alias="champion"
+                )
+                model_version = model_version_by_alias.version
                 logger.info(f"Loaded model version: {model_version}")
             except Exception as e:
                 logger.warning(f"Could not read model version: {e}")
