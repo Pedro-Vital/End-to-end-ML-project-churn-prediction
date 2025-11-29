@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from churn_project.constants import CONFIG_FILE_PATH, PARAMS_FILE_PATH, SCHEMA_FILE_PATH
@@ -44,11 +45,17 @@ class ConfigurationManager:
 
         create_directories([config.root_dir])
 
+        # Prefer environment variables if available for sensitive info
+        db_host = os.getenv("DB_HOST", config.db_host)
+        db_user = os.getenv("DB_USER", config.db_user)
+        db_password = os.getenv("DB_PASSWORD", config.db_password)
+        db_name = os.getenv("DB_NAME", config.db_name)
+
         data_ingestion_config = DataIngestionConfig(
-            db_host=config.db_host,
-            db_user=config.db_user,
-            db_password=config.db_password,
-            db_name=config.db_name,
+            db_host=db_host,
+            db_user=db_user,
+            db_password=db_password,
+            db_name=db_name,
             base_query=config.base_query,
             raw_data_path=Path(config.raw_data_path),
             training_path=Path(config.training_path),
