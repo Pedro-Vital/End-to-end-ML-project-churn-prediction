@@ -17,9 +17,9 @@ class DataIngestionConfig:
     db_password: str
     db_name: str
     base_query: str
-    feature_store_file_path: Path
-    training_file_path: Path
-    testing_file_path: Path
+    raw_data_path: Path
+    training_path: Path
+    testing_path: Path
     train_test_split_ratio: float
     random_state: int
     columns: dict
@@ -27,14 +27,12 @@ class DataIngestionConfig:
 
 @dataclass(frozen=True)
 class DataValidationConfig:
-    root_dir: Path
     validation_report_path: Path
     columns: dict
 
 
 @dataclass
 class DataTransformationConfig:
-    root_dir: Path
     transformed_train_path: Path
     transformed_test_path: Path
     preprocessor_path: Path
@@ -45,16 +43,20 @@ class DataTransformationConfig:
 
 @dataclass
 class ModelTrainerConfig:
-    root_dir: Path
-    trained_model_path: Path
     model_name: str
+    target_column: str
     best_params: dict
     mlflow_config: MlflowConfig
 
 
 @dataclass
 class ModelEvaluationConfig:
-    root_dir: Path
+    target_column: str
     model_evaluation_report_path: Path
     change_threshold: float
+    mlflow_config: MlflowConfig
+
+
+@dataclass
+class ModelPusherConfig:
     mlflow_config: MlflowConfig

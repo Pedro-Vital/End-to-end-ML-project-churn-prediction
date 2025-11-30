@@ -1,7 +1,7 @@
 import sys
 
 import mlflow
-import numpy as np
+import pandas as pd
 
 from churn_project.entity.artifact_entity import (
     DataTransformationArtifact,
@@ -11,7 +11,7 @@ from churn_project.entity.artifact_entity import (
 from churn_project.entity.config_entity import ModelEvaluationConfig
 from churn_project.exception import CustomException
 from churn_project.logger import logger
-from churn_project.utils import evaluate_clf, save_json
+from churn_project.utils import evaluate_clf
 
 
 class ModelEvaluation:
@@ -46,35 +46,6 @@ class ModelEvaluation:
             raise CustomException(e, sys)
         return production_model, new_model
 
-    def promote_model(self, model_trainer_artifact: ModelTrainerArtifact):
-        logger.info("Promoting model to production stage.")
-        # 1. Tag model as approved in MLflow
-        self.client.set_model_version_tag(
-            name=self.mlflow_config.registry_name,
-            version=model_trainer_artifact.registry_version,
-            key="validation_status",
-            value="approved",
-        )
-
-        # 2. Copy to production environment
-        new_model_uri = f"models:/{self.mlflow_config.registry_name}/{model_trainer_artifact.registry_version}"
-        dst_name = self.mlflow_config.prod_registry_name
-        logger.info(
-            f"Copying model version from {new_model_uri} to registry {dst_name}"
-        )
-        dst_version = self.client.copy_model_version(
-            src_model_uri=new_model_uri,
-            dst_name=dst_name,
-        )
-        logger.info(f"Copied version to {dst_name} as {dst_version.version}")
-
-        # 3. Assign alias 'champion' to the promoted model version
-        self.client.set_registered_model_alias(
-            name=dst_name,
-            alias="champion",
-            version=dst_version.version,
-        )
-
     def initiate_model_evaluation(
         self,
         data_transformation_artifact: DataTransformationArtifact,
@@ -83,15 +54,11 @@ class ModelEvaluation:
         try:
             logger.info("Starting model evaluation process.")
 
-            # Load transformed test data
-            test_arr = np.load(data_transformation_artifact.transformed_test_path)
-            X_test = test_arr[:, :-1]
-            y_test = test_arr[:, -1]
-
-            # Log evaluation context
-            mlflow.set_tag("developer", "Pedro")
-            mlflow.log_param(
-                "registry_version", model_trainer_artifact.registry_version
+            # Load raw test data
+            test_df = pd.read_csv(data_transformation_artifact.raw_test_path)
+            X_test = test_df.drop(columns=[self.config.target_column], axis=1)
+            y_test = test_df[self.config.target_column].map(
+                {"Attrited Customer": 1, "Existing Customer": 0}
             )
 
             # Load models for evaluation
@@ -111,22 +78,12 @@ class ModelEvaluation:
             new_acc, new_f1, new_auc = evaluate_clf(new_model, X_test, y_test)
             logger.info(f"New model AUC: {new_auc:.4f}")
 
-            # Compare models and promote if better
-            # Adding epsilon to avoid noise issues
+            # Compare models adding epsilon to avoid noise issues
             is_model_accepted = new_auc > (prod_auc + self.config.change_threshold)
             if is_model_accepted:
-                logger.info("New model outperforms the production model. Promoting.")
-                self.promote_model(model_trainer_artifact)
+                logger.info("New model outperforms the production model.")
             else:
-                logger.info(
-                    "New model does not outperform the production model. Rejecting."
-                )
-                self.client.set_model_version_tag(
-                    name=self.mlflow_config.registry_name,
-                    version=model_trainer_artifact.registry_version,
-                    key="validation_status",
-                    value="rejected",
-                )
+                logger.info("New model does not outperform the production model.")
 
             evaluation_report = {
                 "production_model_accuracy": prod_acc,
@@ -138,12 +95,6 @@ class ModelEvaluation:
                 "is_model_accepted": is_model_accepted,
             }
 
-            # Save evaluation report
-            save_json(self.config.model_evaluation_report_path, evaluation_report)
-            logger.info(
-                f"Model evaluation report saved at {self.config.model_evaluation_report_path}"
-            )
-
             # Log evaluation report and metrics to MLflow
             mlflow.log_dict(evaluation_report, "evaluation_report.json")
             mlflow.log_metrics(
@@ -151,7 +102,8 @@ class ModelEvaluation:
                     "test_accuracy": new_acc,
                     "test_f1_score": new_f1,
                     "test_roc_auc": new_auc,
-                }
+                },
+                run_id=mlflow.active_run().info.run_id,
             )
             mlflow.set_tag("is_model_accepted", str(is_model_accepted))
 

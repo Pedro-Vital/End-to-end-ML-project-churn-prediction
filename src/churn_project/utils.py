@@ -106,15 +106,38 @@ def get_size(path: Path) -> str:
 
 
 def evaluate_clf(model, X, true) -> tuple:
+    # Standard prediction
     y_pred = model.predict(X)
-    y_proba = model.predict_proba(X)[:, 1]
 
     acc = accuracy_score(true, y_pred)
     f1 = f1_score(true, y_pred)
 
+    # Probability prediction
+    y_proba = None
+
+    # Case 1: model exposes predict_proba directly
     if hasattr(model, "predict_proba"):
-        roc_auc = roc_auc_score(true, y_proba)
-    else:
-        roc_auc = roc_auc_score(true, y_pred)
+        try:
+            y_proba = model.predict_proba(X)[:, 1]
+        except Exception:
+            y_proba = None
+
+    # Case 2: probability exists only in underlying model inside the pipeline
+    if (
+        y_proba is None
+        and hasattr(model, "named_steps")
+        and "model" in model.named_steps
+    ):
+        clf = model.named_steps["model"]
+        prep = model.named_steps["preprocessor"]
+        if hasattr(clf, "predict_proba"):
+            X_trans = prep.transform(X)
+            y_proba = clf.predict_proba(X_trans)[:, 1]
+
+    # Case 3: fall back to label predictions
+    if y_proba is None:
+        y_proba = y_pred
+
+    roc_auc = roc_auc_score(true, y_proba)
 
     return acc, f1, roc_auc

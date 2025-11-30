@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from churn_project.constants import CONFIG_FILE_PATH, PARAMS_FILE_PATH, SCHEMA_FILE_PATH
@@ -7,6 +8,7 @@ from churn_project.entity.config_entity import (
     DataValidationConfig,
     MlflowConfig,
     ModelEvaluationConfig,
+    ModelPusherConfig,
     ModelTrainerConfig,
 )
 from churn_project.utils import create_directories, read_yaml
@@ -43,15 +45,21 @@ class ConfigurationManager:
 
         create_directories([config.root_dir])
 
+        # Prefer environment variables if available for sensitive info
+        db_host = os.getenv("DB_HOST", config.db_host)
+        db_user = os.getenv("DB_USER", config.db_user)
+        db_password = os.getenv("DB_PASSWORD", config.db_password)
+        db_name = os.getenv("DB_NAME", config.db_name)
+
         data_ingestion_config = DataIngestionConfig(
-            db_host=config.db_host,
-            db_user=config.db_user,
-            db_password=config.db_password,
-            db_name=config.db_name,
+            db_host=db_host,
+            db_user=db_user,
+            db_password=db_password,
+            db_name=db_name,
             base_query=config.base_query,
-            feature_store_file_path=Path(config.feature_store_file_path),
-            training_file_path=Path(config.training_file_path),
-            testing_file_path=Path(config.testing_file_path),
+            raw_data_path=Path(config.raw_data_path),
+            training_path=Path(config.training_path),
+            testing_path=Path(config.testing_path),
             train_test_split_ratio=config.train_test_split_ratio,
             random_state=config.random_state,
             columns=columns,
@@ -66,7 +74,6 @@ class ConfigurationManager:
         create_directories([config.root_dir])
 
         data_validation_config = DataValidationConfig(
-            root_dir=Path(config.root_dir),
             validation_report_path=Path(config.validation_report_path),
             columns=columns,
         )
@@ -74,18 +81,15 @@ class ConfigurationManager:
 
     def get_data_transformation_config(self) -> DataTransformationConfig:
         config = self.config.data_transformation
-        target_column = self.schema.target_column  # target str
-        drop_columns = self.schema.drop_columns  # list of str
 
         create_directories([config.root_dir])
 
         data_transformation_config = DataTransformationConfig(
-            root_dir=Path(config.root_dir),
             transformed_train_path=Path(config.transformed_train_path),
             transformed_test_path=Path(config.transformed_test_path),
             preprocessor_path=Path(config.preprocessor_path),
-            target_column=target_column,
-            drop_columns=drop_columns,
+            target_column=self.schema.target_column,  # target str
+            drop_columns=self.schema.drop_columns,  # list of str
             random_state=config.random_state,
         )
         return data_transformation_config
@@ -95,12 +99,9 @@ class ConfigurationManager:
         params = self.params
         mlflow_config = self.get_mlflow_config()
 
-        create_directories([config.root_dir])
-
         model_trainer_config = ModelTrainerConfig(
-            root_dir=Path(config.root_dir),
-            trained_model_path=Path(config.trained_model_path),
             model_name=config.model_name,
+            target_column=self.schema.target_column,
             best_params=params.get(config.model_name, {}),
             mlflow_config=mlflow_config,
         )
@@ -110,12 +111,18 @@ class ConfigurationManager:
         config = self.config.model_evaluation
         mlflow_config = self.get_mlflow_config()
 
-        create_directories([config.root_dir])
-
         model_evaluation_config = ModelEvaluationConfig(
-            root_dir=Path(config.root_dir),
             change_threshold=config.change_threshold,
+            target_column=self.schema.target_column,
             model_evaluation_report_path=Path(config.model_evaluation_report_path),
             mlflow_config=mlflow_config,
         )
         return model_evaluation_config
+
+    def get_model_pusher_config(self) -> ModelPusherConfig:
+        mlflow_config = self.get_mlflow_config()
+
+        model_pusher_config = ModelPusherConfig(
+            mlflow_config=mlflow_config,
+        )
+        return model_pusher_config

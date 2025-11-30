@@ -221,3 +221,6 @@ logs/
 # Data and models
 mlruns/
 artifacts/
+
+# Local configuration file
+config/config.yaml

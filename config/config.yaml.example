@@ -1,15 +1,23 @@
+# --------------------------------------------------
+# Copy this file to config.yaml before running the project.
+# For database credentials, either:
+#   - replace the null values below, OR
+#   - set environment variables: DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
+# Environment variables always override these values.
+# --------------------------------------------------
+
 artifacts_root: artifacts
 
 data_ingestion:
-  db_host: "localhost"
-  db_user: "root"
-  db_password: "12345"
-  db_name: "bank_db"
+  db_host: null # REPLACE OR SET ENV VARIABLES
+  db_user: null # REPLACE OR SET ENV VARIABLES
+  db_password: null # REPLACE OR SET ENV VARIABLES
+  db_name: null # REPLACE OR SET ENV VARIABLES
   base_query: "SELECT {} FROM churners;"
   root_dir: artifacts/data_ingestion
-  feature_store_file_path: artifacts/data_ingestion/feature_store.csv
-  training_file_path: artifacts/data_ingestion/ingested/train.csv
-  testing_file_path: artifacts/data_ingestion/ingested/test.csv
+  raw_data_path: artifacts/data_ingestion/raw_data.csv
+  training_path: artifacts/data_ingestion/ingested/train.csv
+  testing_path: artifacts/data_ingestion/ingested/test.csv
   train_test_split_ratio: 0.2
   random_state: 42
 
@@ -25,12 +33,9 @@ data_transformation:
   random_state: 42
 
 model_trainer:
-  root_dir: artifacts/model_trainer
-  trained_model_path: artifacts/model_trainer/model.pkl
   model_name: "XGBClassifier"
 
 model_evaluation:
-  root_dir: artifacts/model_evaluation
   change_threshold: 0.005
   model_evaluation_report_path: artifacts/model_evaluation/evaluation_report.json
 
