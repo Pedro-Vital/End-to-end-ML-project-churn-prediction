@@ -1,11 +1,30 @@
+import time
+
 import pandas as pd
 from fastapi import Depends, FastAPI, HTTPException
+from prometheus_client import Counter, Histogram
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from churn_project.api.schemas import BatchInput, PredictionResponse, UserInput
 from churn_project.entity.config_entity import MlflowConfig
 from churn_project.inference.prediction_service import PredictionService
 
 app = FastAPI()
+
+# Initialize Prometheus Instrumentator
+instrumentator = Instrumentator().instrument(app)
+instrumentator.expose(app)  # Expose metrics at /metrics endpoint
+
+# Define custom metrics
+PREDICTION_COUNT = Counter(
+    "prediction_requests_total", "Total number of prediction requests"
+)
+PREDICTION_LATENCY = Histogram(
+    "prediction_request_latency_seconds", "Latency of prediction requests in seconds"
+)
+OUTPUT_DISTRIBUTION = Counter(
+    "prediction_output_distribution", "Distribution of prediction outputs", ["label"]
+)
 
 # Initialize PredictionService singleton
 mlflow_config = MlflowConfig(
@@ -46,10 +65,20 @@ def health_check():
 # Prediction Endpoint
 @app.post("/predict", response_model=PredictionResponse)
 def predict(input_data: UserInput, _: bool = Depends(model_available)):
+    start = time.time()
 
+    # Convert input data to DataFrame and make prediction
     df = pd.DataFrame([input_data.model_dump()])
-
     output = predictor.predict(df)
+
+    # Record metrics
+    latency = time.time() - start
+    PREDICTION_LATENCY.observe(latency)
+
+    PREDICTION_COUNT.inc()
+
+    for pred in output["predictions"]:
+        OUTPUT_DISTRIBUTION.labels(label=str(pred)).inc()
 
     return PredictionResponse(**output)
 
@@ -57,9 +86,19 @@ def predict(input_data: UserInput, _: bool = Depends(model_available)):
 # Prediction Endpoint for batch input
 @app.post("/predict_batch", response_model=PredictionResponse)
 def predict_batch(batch_input: BatchInput, _: bool = Depends(model_available)):
+    start = time.time()
 
+    # Convert input data to DataFrame and make prediction
     df = pd.DataFrame([item.model_dump() for item in batch_input.records])
-
     output = predictor.predict(df)
+
+    # Record metrics
+    latency = time.time() - start
+    PREDICTION_LATENCY.observe(latency)
+
+    PREDICTION_COUNT.inc(len(output["predictions"]))
+
+    for pred in output["predictions"]:
+        OUTPUT_DISTRIBUTION.labels(label=str(pred)).inc()
 
     return PredictionResponse(**output)

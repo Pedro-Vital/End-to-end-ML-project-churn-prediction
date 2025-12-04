@@ -1,0 +1,49 @@
+version: "3.8"
+services:
+  churn_api:
+    build: ./src/churn_project/api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mlflow
+    # command: uvicorn app:app --host 0.0.0.0 --port 8000 # copilot suggested command
+
+  streamlit_app:
+    build: ./frontend
+    ports:
+      - "8501:8501"
+    depends_on:
+      - churn_api
+
+  mlflow:
+  image: ghcr.io/mlflow/mlflow:latest
+  ports:
+    - "5000:5000"
+  environment:
+    AWS_DEFAULT_REGION: sa-east-1 # recommended when using S3
+  command: >
+    mlflow server
+    --host 0.0.0.0
+    --port 5000
+    --backend-store-uri sqlite:///mlflow.db
+  # --default-artifact-root s3://your-bucket/mlflow
+  volumes:
+    - ./mlflow.db:/mlflow.db # host path : container path
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+      - prometheus_data:/prometheus
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+volumes:
+  prometheus_data:
