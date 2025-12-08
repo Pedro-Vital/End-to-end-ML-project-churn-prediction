@@ -1,49 +1,57 @@
-version: "3.8"
 services:
-  churn_api:
-    build: ./src/churn_project/api
+  fastapi:
+    build:
+      context: .
+      dockerfile: src/churn_project/api/Dockerfile
+      # We can't simply use build: ./src/churn_project/api because Dockerfile copies files from outside that directory
+      # We need pyproject.toml, poetry.lock, and src/ to build the image properly
     ports:
       - "8000:8000"
     depends_on:
       - mlflow
-    # command: uvicorn app:app --host 0.0.0.0 --port 8000 # copilot suggested command
+    environment:
+      MLFLOW_TRACKING_URI: "http://mlflow:5000"  # Point FastAPI to the mlflow service with Docker DNS
+    networks:
+      - monitoring
 
   streamlit_app:
-    build: ./frontend
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
     ports:
       - "8501:8501"
     depends_on:
-      - churn_api
-
-  mlflow:
-  image: ghcr.io/mlflow/mlflow:latest
-  ports:
-    - "5000:5000"
-  environment:
-    AWS_DEFAULT_REGION: sa-east-1 # recommended when using S3
-  command: >
-    mlflow server
-    --host 0.0.0.0
-    --port 5000
-    --backend-store-uri sqlite:///mlflow.db
-  # --default-artifact-root s3://your-bucket/mlflow
-  volumes:
-    - ./mlflow.db:/mlflow.db # host path : container path
+      - fastapi
+    environment:
+      FASTAPI_API_URL: "http://fastapi:8000"  # Point Streamlit to the fastapi service with Docker DNS
+    networks:
+      - monitoring
 
   prometheus:
-    image: prom/prometheus
+    image: prom/prometheus:v3.8.0
     ports:
       - "9090:9090"
     volumes:
-      - ./monitoring/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
+    networks:
+      - monitoring
 
   grafana:
-    image: grafana/grafana
+    image: grafana/grafana:12.3
     ports:
       - "3000:3000"
     depends_on:
       - prometheus
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - monitoring
 
 volumes:
   prometheus_data:
+  grafana_data:
+
+networks:
+  monitoring:
+    driver: bridge
