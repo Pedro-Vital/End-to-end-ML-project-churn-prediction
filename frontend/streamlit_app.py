@@ -1,13 +1,15 @@
+import os
+
 import pandas as pd
 import requests
 import streamlit as st
 
-API_URL = "http://localhost:8000"
+FASTAPI_API_URL = os.getenv("FASTAPI_API_URL", "http://localhost:8000")
 
 
 # Util Functions
 def predict_single(data):
-    response = requests.post(f"{API_URL}/predict", json=data)
+    response = requests.post(f"{FASTAPI_API_URL}/predict", json=data)
     if response.status_code != 200:
         st.error("Prediction error: " + response.text)
         return None
@@ -16,7 +18,7 @@ def predict_single(data):
 
 def predict_batch(df):
     payload = {"records": df.to_dict(orient="records")}
-    response = requests.post(f"{API_URL}/predict_batch", json=payload)
+    response = requests.post(f"{FASTAPI_API_URL}/predict_batch", json=payload)
     if response.status_code != 200:
         st.error("Batch prediction error: " + response.text)
         return None
@@ -24,7 +26,7 @@ def predict_batch(df):
 
 
 def health_check():
-    response = requests.get(f"{API_URL}/health")
+    response = requests.get(f"{FASTAPI_API_URL}/health")
     if response.status_code == 200:
         return response.json()
     return None
