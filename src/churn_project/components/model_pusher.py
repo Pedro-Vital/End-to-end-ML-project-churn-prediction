@@ -1,7 +1,13 @@
+import json
+import os
 import sys
+import tempfile
+from datetime import datetime
 
 import mlflow
+from mlflow.tracking import MlflowClient
 
+from churn_project.aws.s3_utils import upload_folder_to_s3
 from churn_project.entity.artifact_entity import (
     ModelEvaluationArtifact,
     ModelPusherArtifact,
@@ -16,11 +22,17 @@ class ModelPusher:
     def __init__(self, config: ModelPusherConfig):
         self.config = config
         self.mlflow_config = config.mlflow_config
-        self.client = mlflow.tracking.MlflowClient(
-            tracking_uri=self.config.mlflow_config.tracking_uri
-        )
+        self.client = MlflowClient(tracking_uri=self.config.mlflow_config.tracking_uri)
+        # production S3 URI where API will fetch the model
+        self.prod_s3_uri = self.config.prod_s3_uri
 
-    def promote_model(self, source_registry_version: int):
+    def promote_in_mlflow(self, source_registry_version: int):
+        """
+        Core promotion logic:
+        1. Tag model as approved in MLflow
+        2. Copy to production environment
+        3. Assign alias 'champion' to the promoted model version
+        """
         logger.info("Promoting model to production stage.")
         # 1. Tag model as approved in MLflow
         self.client.set_model_version_tag(
@@ -50,7 +62,51 @@ class ModelPusher:
             alias="champion",
             version=dst_version.version,
         )
+
         return dst_version.version
+
+    def deploy_to_s3(self, prod_version: int):
+        """
+        Upload model artifacts and metadata to production S3 location
+        """
+        logger.info("Uploading model artifacts to production S3 location.")
+
+        model_version = self.client.get_model_version(
+            name=self.mlflow_config.prod_registry_name, version=prod_version
+        )
+        artifact_uri = model_version.source
+        run_id = model_version.run_id
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            local_path = mlflow.artifacts.download_artifacts(
+                artifact_uri=artifact_uri,
+                dst_path=os.path.join(temp_dir, "model"),
+            )
+            logger.info(f"Downloaded model artifacts to {local_path}")
+
+            # Write metadata to the same temp directory
+            metadata = {
+                "version": prod_version,
+                "promoted_at": str(datetime.isoformat(datetime.now())),
+                "run_id": run_id,
+            }
+
+            with open(os.path.join(temp_dir, "metadata.json"), "w") as f:
+                json.dump(metadata, f)
+            logger.info(f"Wrote metadata to {f.name}")
+
+            # Upload entire temp directory to S3
+            upload_folder_to_s3(folder_path=temp_dir, s3_uri=self.prod_s3_uri)
+            logger.info(f"Uploaded model and metadata to {self.prod_s3_uri}")
+
+    def push_model(self, version: int):
+        """
+        Push model to production by promoting in MLflow and deploying to S3
+        """
+        logger.info("Pushing model to production.")
+        prod_version = self.promote_in_mlflow(version)
+        self.deploy_to_s3(prod_version=prod_version)
+        logger.info("Model pushed to production successfully.")
 
     def initiate_model_pusher(
         self,
@@ -61,11 +117,8 @@ class ModelPusher:
             logger.info("Starting model pusher process.")
 
             if model_evaluation_artifact.is_model_accepted:
-                # Promote the model to production
-                prod_version = self.promote_model(
-                    model_trainer_artifact.registry_version
-                )
-                promoted = {"promoted": True, "prod_version": prod_version}
+                self.push_model(version=model_trainer_artifact.registry_version)
+                promoted = {"promoted": True}
             else:
                 self.client.set_model_version_tag(
                     name=self.mlflow_config.registry_name,
