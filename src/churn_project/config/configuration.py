@@ -121,8 +121,10 @@ class ConfigurationManager:
 
     def get_model_pusher_config(self) -> ModelPusherConfig:
         mlflow_config = self.get_mlflow_config()
+        config = self.config.model_pusher
 
         model_pusher_config = ModelPusherConfig(
             mlflow_config=mlflow_config,
+            prod_s3_uri=config.prod_s3_uri,
         )
         return model_pusher_config
