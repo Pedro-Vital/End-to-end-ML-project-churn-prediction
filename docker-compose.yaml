@@ -12,7 +12,7 @@ services:
       AWS_REGION: "sa-east-1"  # boto3 needs region to access S3
       AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
-      PROD_S3_URI: "${PROD_S3_URI}"
+      PROD_S3_URI: "s3://churn-production/champion-model/"
     networks:
       - monitoring
 
