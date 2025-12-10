@@ -8,6 +8,7 @@ services:
     ports:
       - "8000:8000"
     environment:
+      # This is only necessary locally; in production, we will use IAM roles
       AWS_REGION: "sa-east-1"  # boto3 needs region to access S3
       AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
