@@ -1,13 +1,17 @@
+import os
 import time
 
 import pandas as pd
+from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException
 from prometheus_client import Counter, Histogram
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from churn_project.api.schemas import BatchInput, PredictionResponse, UserInput
-from churn_project.entity.config_entity import MlflowConfig
 from churn_project.inference.prediction_service import PredictionService
+
+# Load environment variables to run locally
+load_dotenv()
 
 app = FastAPI()
 
@@ -27,14 +31,9 @@ OUTPUT_DISTRIBUTION = Counter(
 )
 
 # Initialize PredictionService singleton
-mlflow_config = MlflowConfig(
-    tracking_uri="http://localhost:5000",
-    prod_registry_name="prod.churn_model",
-    registry_name="churn_model",
-    experiment_name="churn_prediction",
+predictor = PredictionService(
+    prod_s3_uri=os.getenv("PROD_S3_URI", "s3://churn-production/champion-model/")
 )
-
-predictor = PredictionService(mlflow_config)
 
 
 # Dependency to ensure model is loaded
