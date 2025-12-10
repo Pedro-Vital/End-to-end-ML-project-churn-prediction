@@ -7,10 +7,11 @@ services:
       # We need pyproject.toml, poetry.lock, and src/ to build the image properly
     ports:
       - "8000:8000"
-    depends_on:
-      - mlflow
     environment:
-      MLFLOW_TRACKING_URI: "http://mlflow:5000"  # Point FastAPI to the mlflow service with Docker DNS
+      AWS_REGION: "sa-east-1"  # boto3 needs region to access S3
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+      PROD_S3_URI: "${PROD_S3_URI}"
     networks:
       - monitoring
 
