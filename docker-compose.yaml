@@ -34,8 +34,8 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro # bind mount the config file
+      - prometheus_data:/prometheus # prometheus stores time series data here
     networks:
       - monitoring
 
@@ -46,7 +46,7 @@ services:
     depends_on:
       - prometheus
     volumes:
-      - grafana_data:/var/lib/grafana
+      - grafana_data:/var/lib/grafana # stores dashboards and other grafana data
     networks:
       - monitoring
 
