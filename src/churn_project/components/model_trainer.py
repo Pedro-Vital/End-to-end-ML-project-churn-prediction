@@ -83,7 +83,7 @@ class ModelTrainer:
             # Log and register the model to MLflow
             model_info = mlflow.sklearn.log_model(
                 inference_pipeline,
-                name="inference_pipeline",
+                name=f"inference_pipeline_{self.config.model_name}",
                 input_example=input_example,
                 registered_model_name=self.mlflow_config.registry_name,
             )
