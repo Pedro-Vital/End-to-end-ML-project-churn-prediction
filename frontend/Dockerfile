@@ -6,7 +6,7 @@ COPY pyproject.toml poetry.lock /app/
 
 RUN pip install poetry
 RUN poetry self add poetry-plugin-export
-RUN poetry export -f requirements.txt --without-hashes -o requirements.txt
+RUN poetry export -f requirements.txt --without-hashes --only streamlit -o requirements.txt
 RUN pip install -r requirements.txt
 RUN pip uninstall -y poetry
 
