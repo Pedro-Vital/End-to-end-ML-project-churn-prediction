@@ -78,6 +78,7 @@ class ModelPusher:
         run_id = model_version.run_id
 
         with tempfile.TemporaryDirectory() as temp_dir:
+            # Download model artifacts to temp directory
             local_path = mlflow.artifacts.download_artifacts(
                 artifact_uri=artifact_uri,
                 dst_path=os.path.join(temp_dir, "model"),
@@ -98,6 +99,14 @@ class ModelPusher:
             # Upload entire temp directory to S3
             upload_folder_to_s3(folder_path=temp_dir, s3_uri=self.prod_s3_uri)
             logger.info(f"Uploaded model and metadata to {self.prod_s3_uri}")
+
+            # Extract model requirements file and save for CI / Docker build
+            dst_path = os.path.join("artifacts", "infra", "model")
+            os.makedirs(dst_path, exist_ok=True)
+            mlflow.artifacts.download_artifacts(
+                artifact_uri=f"{artifact_uri}/requirements.txt",
+                dst_path=dst_path,
+            )
 
     def push_model(self, version: int):
         """
