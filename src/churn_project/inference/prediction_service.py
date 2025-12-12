@@ -87,9 +87,7 @@ class PredictionService:
             response = {
                 "predictions": predictions_list,
                 "model_version": self._model_version,
-                "timestamp": datetime.now(datetime.timezone.utc).strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                ),
+                "timestamp": datetime.now(datetime.timezone.utc).isoformat(),
                 "num_samples": len(predictions_list),
             }
 
