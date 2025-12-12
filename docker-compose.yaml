@@ -34,7 +34,8 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro # bind mount the config file
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml # bind mount the config file
+      - ./monitoring/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml # bind mount alerting rules
       - prometheus_data:/prometheus # prometheus stores time series data here
     networks:
       - monitoring
