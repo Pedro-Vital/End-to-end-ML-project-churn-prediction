@@ -1,0 +1,22 @@
+groups:
+  - name: churn_project_alerts
+    rules:
+      # FastAPI service down alert
+      - alert: FastAPIDown
+        expr: up{job="fastapi"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "FastAPI service is down"
+          description: "Prometheus cannot reach the FastAPI metrics endpoint for at least 1 minute."
+
+      # Model not loaded alert
+      - alert: ModelNotLoaded
+        expr: model_loaded == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ML model failed to load"
+          description: "The model_loaded metric reports that the inference model is not loaded."
