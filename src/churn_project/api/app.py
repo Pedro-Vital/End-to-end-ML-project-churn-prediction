@@ -4,7 +4,7 @@ import time
 import pandas as pd
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException
-from prometheus_client import Counter, Histogram
+from prometheus_client import Counter, Gauge, Histogram
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from churn_project.api.schemas import BatchInput, PredictionResponse, UserInput
@@ -29,11 +29,18 @@ PREDICTION_LATENCY = Histogram(
 OUTPUT_DISTRIBUTION = Counter(
     "prediction_output_distribution", "Distribution of prediction outputs", ["label"]
 )
+MODEL_LOADED = Gauge(
+    "model_loaded",
+    "Indicates if the ML model is currently loaded (1 = loaded, 0 = not loaded)",
+)
+
 
 # Initialize PredictionService singleton
 predictor = PredictionService(
     prod_s3_uri=os.getenv("PROD_S3_URI", "s3://churn-production/champion-model/")
 )
+
+MODEL_LOADED.set(1 if predictor.model is not None else 0)
 
 
 # Dependency to ensure model is loaded
