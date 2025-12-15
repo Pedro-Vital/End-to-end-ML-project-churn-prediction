@@ -71,10 +71,22 @@ def model_pusher_task(config, evaluation_artifact, trainer_artifact):
 
 
 @flow(name="TrainingPipelineFlow")
-def training_flow():
+def training_flow(
+    trigger_reason: str | None = None,
+    drift_date: str | None = None,
+    threshold: float | None = None,
+    num_drifted_features: int | None = None,
+):
     """
     This flow orchestrates the entire training pipeline using Prefect.
     """
+    if trigger_reason:
+        logger.info(
+            f"Triggered by {trigger_reason} | "
+            f"date={drift_date} | "
+            f"threshold={threshold} | "
+            f"drifted_features={num_drifted_features}"
+        )
     logger.info("Starting Prefect Training Pipeline Flow")
 
     # Load configs
@@ -93,7 +105,8 @@ def training_flow():
     mlflow.set_experiment(mlflow_config.experiment_name)
 
     with mlflow.start_run(run_name="Pipeline_Run"):
-        mlflow.set_tag("orchestrator", "prefect")
+        mlflow.set_tag("trigger_reason", trigger_reason)
+        mlflow.set_tag("drift_date", drift_date)
 
         ingestion_artifact = data_ingestion_task(ingestion_config)
         validation_artifact = data_validation_task(
@@ -106,15 +119,4 @@ def training_flow():
         evaluation_artifact = model_evaluation_task(
             evaluation_config, transformation_artifact, trainer_artifact
         )
-        pusher_artifact = model_pusher_task(
-            pusher_config, evaluation_artifact, trainer_artifact
-        )
-
-        return {
-            "ingestion": ingestion_artifact,
-            "validation": validation_artifact,
-            "transformation": transformation_artifact,
-            "trainer": trainer_artifact,
-            "evaluation": evaluation_artifact,
-            "pusher": pusher_artifact,
-        }
+        model_pusher_task(pusher_config, evaluation_artifact, trainer_artifact)
