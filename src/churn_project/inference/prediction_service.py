@@ -3,7 +3,7 @@ import os
 import sys
 import tempfile
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 
 import mlflow.pyfunc
 import pandas as pd
@@ -87,7 +87,7 @@ class PredictionService:
             response = {
                 "predictions": predictions_list,
                 "model_version": self._model_version,
-                "timestamp": datetime.now(datetime.timezone.utc).isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "num_samples": len(predictions_list),
             }
 
