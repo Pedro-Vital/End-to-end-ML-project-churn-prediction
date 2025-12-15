@@ -6,4 +6,4 @@ from churn_project.orchestrator.training_flow import training_flow
 load_dotenv()
 
 if __name__ == "__main__":
-    training_flow()
+    training_flow(trigger_reason="Manual Trigger")
