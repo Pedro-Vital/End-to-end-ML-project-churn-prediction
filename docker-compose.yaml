@@ -13,6 +13,7 @@ services:
       AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
       PROD_S3_URI: "s3://churn-production/champion-model/"
+      MONITORING_LOG_S3_URI: "s3://churn-production/monitoring_logs/"
     networks:
       - monitoring
 
