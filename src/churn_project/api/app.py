@@ -1,5 +1,7 @@
 import os
 import time
+import uuid
+from datetime import datetime, timezone
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -8,6 +10,8 @@ from prometheus_client import Counter, Gauge, Histogram
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from churn_project.api.schemas import BatchInput, PredictionResponse, UserInput
+from churn_project.aws.monitoring_logging import upload_log_to_s3
+from churn_project.aws.s3_utils import parse_s3_uri
 from churn_project.inference.prediction_service import PredictionService
 
 # Load environment variables to run locally
@@ -52,6 +56,13 @@ def model_available():
     return True
 
 
+# Parse monitoring log S3 URI
+MONITORING_LOG_S3_URI = os.getenv(
+    "MONITORING_LOG_S3_URI", "s3://churn-production/monitoring_logs/"
+)
+log_bucket, log_prefix = parse_s3_uri(MONITORING_LOG_S3_URI)
+
+
 # Root Endpoint
 @app.get("/")
 def read_root():
@@ -86,6 +97,21 @@ def predict(input_data: UserInput, _: bool = Depends(model_available)):
     for pred in output["predictions"]:
         OUTPUT_DISTRIBUTION.labels(label=str(pred)).inc()
 
+    # Upload monitoring log to S3
+    request_id = str(uuid.uuid4())
+    log_data = {
+        "request_id": request_id,
+        "log_timestamp": datetime.now(timezone.utc).isoformat(),
+        "input": input_data.model_dump(),
+        "predictions": output["predictions"],
+        "model_version": output["model_version"],
+        "prediction_timestamp": output["timestamp"],
+        "num_samples": output["num_samples"],
+        "latency_seconds": latency,
+    }
+
+    upload_log_to_s3(log_data, bucket=log_bucket, prefix=log_prefix)
+
     return PredictionResponse(**output)
 
 
@@ -106,5 +132,20 @@ def predict_batch(batch_input: BatchInput, _: bool = Depends(model_available)):
 
     for pred in output["predictions"]:
         OUTPUT_DISTRIBUTION.labels(label=str(pred)).inc()
+
+    # Upload monitoring log to S3
+    request_id = str(uuid.uuid4())
+    log_data = {
+        "request_id": request_id,
+        "log_timestamp": datetime.now(timezone.utc).isoformat(),
+        "inputs": [item.model_dump() for item in batch_input.records],
+        "predictions": output["predictions"],
+        "model_version": output["model_version"],
+        "prediction_timestamp": output["timestamp"],
+        "num_samples": output["num_samples"],
+        "latency_seconds": latency,
+    }
+
+    upload_log_to_s3(log_data, bucket=log_bucket, prefix=log_prefix)
 
     return PredictionResponse(**output)
