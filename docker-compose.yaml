@@ -1,0 +1,61 @@
+services:
+  fastapi:
+    build:
+      context: .
+      dockerfile: src/churn_project/api/Dockerfile
+      # We can't simply use build: ./src/churn_project/api because Dockerfile copies files from outside that directory
+      # We need pyproject.toml, poetry.lock, and src/ to build the image properly
+    ports:
+      - "8000:8000"
+    environment:
+      # This is only necessary locally; in production, we will use IAM roles
+      AWS_REGION: "sa-east-1"  # boto3 needs region to access S3
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+      PROD_S3_URI: "s3://churn-production/champion-model/"
+      MONITORING_LOG_S3_URI: "s3://churn-production/monitoring_logs/"
+    networks:
+      - monitoring
+
+  streamlit_app:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "8501:8501"
+    depends_on:
+      - fastapi
+    environment:
+      FASTAPI_API_URL: "http://fastapi:8000"  # Point Streamlit to the fastapi service with Docker DNS
+    networks:
+      - monitoring
+
+  prometheus:
+    image: prom/prometheus:v3.8.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml # bind mount the config file
+      - ./monitoring/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml # bind mount alerting rules
+      - prometheus_data:/prometheus # prometheus stores time series data here
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:12.3
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana_data:/var/lib/grafana # stores dashboards and other grafana data
+    networks:
+      - monitoring
+
+volumes:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  monitoring:
+    driver: bridge

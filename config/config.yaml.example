@@ -39,6 +39,9 @@ model_evaluation:
   change_threshold: 0.005
   model_evaluation_report_path: artifacts/model_evaluation/evaluation_report.json
 
+model_pusher:
+  prod_s3_uri: "s3://churn-production/champion-model/"
+
 mlflow:
   tracking_uri: "http://127.0.0.1:5000"
   experiment_name: "Churn-Pipeline"

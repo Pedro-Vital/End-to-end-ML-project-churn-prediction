@@ -60,3 +60,4 @@ class ModelEvaluationConfig:
 @dataclass
 class ModelPusherConfig:
     mlflow_config: MlflowConfig
+    prod_s3_uri: str

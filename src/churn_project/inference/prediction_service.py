@@ -1,68 +1,70 @@
+import json
+import os
 import sys
-from datetime import datetime
+import tempfile
+import traceback
+from datetime import datetime, timezone
 
-import mlflow
+import mlflow.pyfunc
 import pandas as pd
-from mlflow.tracking import MlflowClient
 
-from churn_project.entity.config_entity import MlflowConfig
+from churn_project.aws.s3_utils import download_s3_folder
 from churn_project.exception import CustomException
 from churn_project.logger import logger
 
 
 class PredictionService:
     """
-    Production-ready Prediction Service that loads the champion inference pipeline
-    from the MLflow Model Registry and performs predictions on new data.
+    Loads the champion inference pipeline from fixed S3 production folder
+    (download -> mlflow.pyfunc.load_model) and performs predictions on new data.
 
     Designed to be instantiated once (singleton) inside FastAPI applications.
     """
 
-    def __init__(self, mlflow_config: MlflowConfig):
-        """
-        Initialize and store configuration.
-
-        Args:
-            mlflow_config: MlflowConfig containing MLflow configuration
-        """
-        self.mlflow_config = mlflow_config
-        self.model, self._model_version = self._load_model()
-
+    def __init__(self, prod_s3_uri: str):
+        self.prod_s3_uri = prod_s3_uri
+        self.model = None
+        self._model_version = None
+        try:
+            self._load_model_from_s3()
+        except Exception:
+            logger.warning("No model found yet. FastAPI will run without predictions.")
         logger.info("PredictionService initialized.")
 
     @property
     def model_version(self):
         return self._model_version
 
-    # Internal Model Loader
-    def _load_model(self):
-        """Load champion inference pipeline from MLflow."""
+    def _load_model_from_s3(self):
+        """Download model from S3 and load it using MLflow."""
         try:
-            logger.info("Loading champion inference pipeline from MLflow...")
+            logger.info(f"Downloading model from S3: {self.prod_s3_uri}")
+            # Download to a temporary directory and load model using mlflow.pyfunc
+            with tempfile.TemporaryDirectory() as temp_dir:
+                download_s3_folder(self.prod_s3_uri, temp_dir)
 
-            mlflow.set_tracking_uri(self.mlflow_config.tracking_uri)
+                # Read metadata to get model version
+                metadata_path = os.path.join(temp_dir, "metadata.json")
+                if os.path.exists(metadata_path):
+                    try:
+                        with open(metadata_path, "r") as f:
+                            metadata = json.load(f)
+                        self._model_version = metadata.get("version", "unknown")
+                    except Exception as e:
+                        logger.warning(f"Could not read metadata.json: {e}")
+                        self._model_version = "unknown"
+                else:
+                    logger.warning("metadata.json not found in S3 model folder.")
+                    self._model_version = "unknown"
 
-            model_uri = f"models:/{self.mlflow_config.prod_registry_name}@champion"
-            logger.info(f"Model URI: {model_uri}")
-
-            model = mlflow.pyfunc.load_model(model_uri)
-
-            # Try to extract version
-            try:
-                client = MlflowClient(tracking_uri=self.mlflow_config.tracking_uri)
-                model_version_by_alias = client.get_model_version_by_alias(
-                    name=self.mlflow_config.prod_registry_name, alias="champion"
-                )
-                model_version = model_version_by_alias.version
-                logger.info(f"Loaded model version: {model_version}")
-            except Exception as e:
-                logger.warning(f"Could not read model version: {e}")
-                model_version = "unknown"
-            logger.info("Inference pipeline loaded successfully.")
-            return model, model_version
+                model_path = os.path.join(temp_dir, "model")
+                logger.info(f"Loading model from {model_path}")
+                self.model = mlflow.pyfunc.load_model(model_path)
+                logger.info(f"Model loaded. Version: {self._model_version}")
 
         except Exception as e:
-            logger.error(f"Error while loading model: {e}")
+            logger.error(f"Error loading model from S3: {e}")
+            logger.error(traceback.format_exc())
             raise CustomException(e, sys)
 
     # Prediction
@@ -74,6 +76,8 @@ class PredictionService:
             dict: predictions + metadata
         """
         try:
+            if self.model is None:
+                raise Exception("Model is not loaded.")
             logger.info(f"Prediction requested for {len(input_data)} samples.")
 
             # The sklearn pipeline inside MLflow handles preprocessing
@@ -83,7 +87,7 @@ class PredictionService:
             response = {
                 "predictions": predictions_list,
                 "model_version": self._model_version,
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "num_samples": len(predictions_list),
             }
 
@@ -94,8 +98,7 @@ class PredictionService:
 
             return response
 
-        except CustomException:
-            raise
         except Exception as e:
             logger.error(f"Unexpected error during prediction: {e}")
+            logger.error(traceback.format_exc())
             raise CustomException(e, sys)
