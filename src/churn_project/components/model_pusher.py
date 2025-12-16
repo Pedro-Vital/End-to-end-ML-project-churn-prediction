@@ -100,14 +100,6 @@ class ModelPusher:
             upload_folder_to_s3(folder_path=temp_dir, s3_uri=self.prod_s3_uri)
             logger.info(f"Uploaded model and metadata to {self.prod_s3_uri}")
 
-            # Extract model requirements file and save for CI / Docker build
-            dst_path = os.path.join("artifacts", "infra", "model")
-            os.makedirs(dst_path, exist_ok=True)
-            mlflow.artifacts.download_artifacts(
-                artifact_uri=f"{artifact_uri}/requirements.txt",
-                dst_path=dst_path,
-            )
-
     def push_model(self, version: int):
         """
         Push model to production by promoting in MLflow and deploying to S3
