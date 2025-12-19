@@ -10,15 +10,11 @@ RUN pip install poetry
 
 # Export dependencies and install them
 RUN poetry self add poetry-plugin-export
-RUN poetry export -f requirements.txt --without-hashes --only fastapi -o base_requirements.txt
-RUN pip install -r base_requirements.txt
+RUN poetry export -f requirements.txt --without-hashes --only fastapi -o requirements.txt
+RUN pip install -r requirements.txt
 
 # Remove poetry
 RUN pip uninstall -y poetry
-
-# Install model dependencies extracted during model pushing
-COPY artifacts/infra/model/requirements.txt /app/model_requirements.txt
-RUN pip install --no-cache-dir -r /app/model_requirements.txt
 
 # Copy source code
 COPY src /app/src

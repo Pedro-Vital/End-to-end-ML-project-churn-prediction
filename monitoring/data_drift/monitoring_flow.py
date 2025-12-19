@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 from dotenv import load_dotenv
 from monitoring_tasks import (
@@ -14,9 +15,8 @@ from retraining_trigger import retraining_trigger
 from churn_project.constants import SCHEMA_FILE_PATH
 from churn_project.utils import read_yaml
 
-# Local testing only.
+# load environment variables from .env file
 load_dotenv()
-# For deployed flows, secrets and credentials are handled by blocks.
 
 
 @flow(name="DataMonitoringFlow")
@@ -26,11 +26,17 @@ def data_monitoring_flow(
 ):
     """Main flow to perform data monitoring using Evidently."""
     logger = get_run_logger()
-    if not date:
-        date = flow_run.get_scheduled_start_time().strftime("%Y-%m-%d")
-        logger.info("Using scheduled start time.")
-    else:
+
+    scheduled = flow_run.get_scheduled_start_time()
+
+    if date:
         logger.info("Using provided date.")
+    elif scheduled:
+        date = scheduled.strftime("%Y-%m-%d")
+        logger.info("Using scheduled start time to define date.")
+    else:
+        date = datetime.now().strftime("%Y-%m-%d")
+        logger.warning("Using current time to define date.")
     logger.info(f"Starting Data Monitoring Flow for date: {date}")
 
     schema = read_yaml(SCHEMA_FILE_PATH)
@@ -45,8 +51,8 @@ def data_monitoring_flow(
         target=target,
     )
 
-    log_bucket = os.getenv("LOG_S3_BUCKET")
-    log_prefix = os.getenv("LOG_S3_PREFIX")
+    log_bucket = os.getenv("LOG_S3_BUCKET", "churn-production")
+    log_prefix = os.getenv("LOG_S3_PREFIX", "monitoring_logs")
     current_data = fetch_data_from_s3(log_bucket, log_prefix, date)
     if current_data.empty:
         logger.error(f"No data found for date {date} in s3://{log_bucket}/{log_prefix}")
@@ -70,4 +76,5 @@ def data_monitoring_flow(
     retraining_trigger(drift_report=drift_report, date=date)
 
 
-data_monitoring_flow()
+if __name__ == "__main__":
+    data_monitoring_flow()

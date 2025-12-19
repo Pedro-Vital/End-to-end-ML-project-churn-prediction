@@ -10,7 +10,7 @@ LOG_PATH = os.path.join(LOG_DIR, LOG_FILE)
 
 logger = logging.getLogger("mlProjectLogger")
 logger.setLevel(logging.INFO)
-logger.propagate = False
+logger.propagate = True
 
 if not logger.handlers:
     # delay=True prevents the handler from creating the file until first write

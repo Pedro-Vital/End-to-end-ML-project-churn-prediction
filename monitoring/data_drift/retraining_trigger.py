@@ -21,14 +21,14 @@ def retraining_trigger(drift_report: dict, date: str):
 
     # Trigger the training flow deployment
     run_deployment(
-        name="TrainingPipelineFlow/churn_train",
+        name="TrainingPipelineFlow/churn-train",
         parameters={
             "trigger_reason": "Data Drift Detected",
             "drift_date": date,
             "threshold": drift_report["threshold"],
-            "num_drifted_features": [
-                k for k, v in drift_report["features"].items() if v["drifted"]
-            ],
+            "num_drifted_features": sum(
+                1 for v in drift_report["features"].values() if v["drifted"]
+            ),
         },
     )
 

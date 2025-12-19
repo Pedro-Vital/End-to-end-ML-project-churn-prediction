@@ -62,3 +62,47 @@ entities (config and artifact)
 configuration manager in src config
 components
 pipeline
+
+
+Here is a **straightforward, no-nonsense README section** you can drop directly into your repository.
+
+---
+
+# Grafana Dashboard (Import Instructions)
+
+1. Open Grafana
+   `http://localhost:3000`
+
+2. Go to
+   **Dashboards → Import**
+
+3. Upload or paste the dashboard JSON file from this repository.
+
+4. When Grafana asks for a datasource mapping, set:
+   **DS_PROMETHEUS → your Prometheus datasource**
+
+5. Click **Import**.
+   The dashboard loads immediately and shows:
+
+   * API request throughput
+   * API latency (p50/p95/p99)
+   * HTTP error rate
+   * Prediction throughput
+   * Prediction latency
+   * Churn output distribution
+   * Process CPU and memory
+
+6. Ensure Prometheus is scraping your FastAPI service and exposing `/metrics`.
+
+Done.
+
+
+#### Drift Detection Strategy
+
+This system uses a two-layer monitoring approach:
+
+* Statistical layer (SciPy KS test) is the authoritative signal used for automation and retraining decisions.
+
+* Observability layer (Evidently) is used exclusively for diagnostics, visualization, and human inspection.
+
+Evidently results do not trigger automated actions.

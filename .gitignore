@@ -225,3 +225,7 @@ mlflow.db
 
 # Local configuration file
 config/config.yaml
+
+#Prefect deployment
+.prefectignore
+prefect.yaml
