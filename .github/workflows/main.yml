@@ -22,10 +22,10 @@ jobs:
           poetry install
 
       - name: Run black
-        run: black --check .
+        run: poetry run black --check .
 
       - name: Run unit pytest
-        run: pytest tests/unit
+        run: poetry run pytest tests/unit
 
 
 
