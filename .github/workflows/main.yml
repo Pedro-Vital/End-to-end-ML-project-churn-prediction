@@ -1,0 +1,135 @@
+name: CI-CD Pipeline
+run-name: CI/CD – Build, Push & Deploy to EC2
+on:
+  push:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install poetry
+          poetry install
+
+      - name: Run black
+        run: black --check .
+
+      - name: Run unit pytest
+        run: pytest tests/unit
+
+
+
+  build-and-push:
+    needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} \
+            | docker login --username AWS \
+              --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+
+
+      - name: Build FastAPI image
+        run: |
+          docker build --pull \
+            -f src/churn_project/api/Dockerfile \
+            -t churn-fastapi:latest .
+
+      - name: Tag and push FastAPI image
+        run: |
+          docker tag churn-fastapi:latest \
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/churn-fastapi:latest
+
+          docker push \
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/churn-fastapi:latest
+
+
+      - name: Build Streamlit image
+        run: |
+          docker build --pull \
+            -f frontend/Dockerfile \
+            -t churn-streamlit:latest .
+
+      - name: Tag and push Streamlit image
+        run: |
+          docker tag churn-streamlit:latest \
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/churn-streamlit:latest
+
+          docker push \
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/churn-streamlit:latest
+
+
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        # Checkout required to sync Prometheus config and docker-compose file to EC2
+        uses: actions/checkout@v4
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Prepare EC2 directories
+        run: |
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
+            set -e
+            sudo mkdir -p /opt/churn/monitoring/prometheus
+            sudo chown -R ${{ secrets.EC2_USER }}:${{ secrets.EC2_USER }} /opt/churn
+          EOF
+
+      - name: Sync Prometheus config to EC2
+        run: |
+          rsync -av -e "ssh -i ~/.ssh/id_rsa" \
+            monitoring/prometheus/ \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/opt/churn/monitoring/prometheus/
+
+      - name: Sync docker-compose.prod.yaml
+        run: |
+          rsync -av -e "ssh -i ~/.ssh/id_rsa" \
+            docker-compose.prod.yaml \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/opt/churn/docker-compose.prod.yaml
+
+      - name: Deploy to EC2
+        run: |
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
+            set -e
+            echo "Starting deployment on EC2..."
+
+            export AWS_ACCOUNT_ID="${{ secrets.AWS_ACCOUNT_ID }}"
+            export AWS_REGION="${{ secrets.AWS_REGION }}"
+
+            aws ecr get-login-password --region "$AWS_REGION" \
+              | docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+
+            cd /opt/churn
+            docker compose -f docker-compose.prod.yaml ps
+            docker compose -f docker-compose.prod.yaml pull
+            docker compose -f docker-compose.prod.yaml up -d --remove-orphans
+          EOF
