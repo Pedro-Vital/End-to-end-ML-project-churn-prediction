@@ -3,6 +3,8 @@ run-name: CI/CD - Build, Push & Deploy to EC2
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'README.md'
 
 jobs:
   ci:
