@@ -33,7 +33,7 @@ This repository contains an end-to-end MLOps system for churn prediction in a ba
 ---
 
 ## System Architecture
-![System Architecture](.docs/assets/Churn_Project_Architecture.svg)
+![System Architecture](./docs/assets/Churn_Project_Architecture.svg)
 
 
 
