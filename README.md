@@ -1,3 +1,98 @@
+# End-to-End MLOps System for Churn Prediction
+
+---
+
+## Introduction
+
+This repository contains an end-to-end MLOps system for churn prediction in a bank. The project demonstrates core MLOps principles, including orchestration, model deployment, model versioning, experiment tracking, monitoring, automated retraining triggered by data drift, best practices and much more. The core data science methodology including EDA, modeling and the necessary hyperparameter tuning using bayesian search to feed the training pipeline is provided in the [Experiment.ipynb](./research/Experiment.ipynb).
+
+---
+
+## Table of Contents
+
+- [Problem Statement](#problem-statement)
+- [System Architecture](#system-architecture)
+- [Data](#data)
+- [Experiment Tracking](#experiment-tracking)
+- [Orchestration](#orchestration)
+- [Deployment](#deployment)
+- [Monitoring](#monitoring)
+- [Best Practices](#best-practices)
+- [Setup](#setup)
+- [Running Tests](#running-tests)
+- [Project Structure](#project-structure)
+- [Future Works](#future-works)
+- [Acknowledgements](#acknowledgements)
+
+---
+
+## Problem Statement
+
+
+
+---
+
+## System Architecture
+![System Architecture](.docs/assets/Churn_Project_Architecture.svg)
+
+
+
+---
+
+## Data
+
+
+
+
+
+---
+
+## Experiment Tracking and Model Versioning
+
+
+
+---
+
+## Orchestration
+
+
+
+
+---
+
+## Deployment
+
+
+
+---
+
+## Best Practices
+
+
+
+
+---
+
+## Setup
+
+
+
+
+---
+
+## Project Structure
+
+
+
+---
+
+## Sample Run
+
+
+
+
+
+
 ## 🔧 Configuration & Secrets Handling
 
 This project uses a **simple and safe configuration pattern**:
