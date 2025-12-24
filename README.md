@@ -3,14 +3,15 @@
 
 ## Introduction
 
-This repository contains a production-oriented end-to-end MLOps system for churn prediction in a bank. The project demonstrates core MLOps principles, including orchestration, model deployment, model versioning, experiment tracking, monitoring, automated retraining triggered by data drift, best practices and much more. The core data science context and methodology including exploratory data analysis, modeling and the hyperparameter optimization needed to feed the training pipeline is provided in the research's [Experiment.ipynb](./research/Experiment.ipynb).
+This repository contains a production-oriented end-to-end MLOps system for churn prediction in a bank. The project demonstrates core MLOps principles, including orchestration, model deployment, model versioning, experiment tracking, monitoring, automated retraining triggered by data drift, best practices and much more. 
+
+**The core data science documentation with all context and methodology including exploratory data analysis, modeling and hyperparameter tuning is provided in the research's [Experiment.ipynb](./research/Experiment.ipynb).**
 
 ## Table of Contents
 
 - [Project Overview](#project-overview)
 - [System Architecture](#system-architecture)
 - [ML Lifecycle Design](#ml-lifecycle-design)
-- [Serving & Inference Strategy](#serving--inference-strategy)
 - [Project Structure](#project-structure)
 - [Setup](#setup)
 - [Limitations & Future Improvements](#limitations--future-improvements)
@@ -55,8 +56,7 @@ Prefect enables scheduled monitoring with deployed flows, which are registered a
 
 #### 3. Hyperparameter Tuning
 
-The training pipeline uses optimized hyperparameters by the bayesian search of **Optuna**. MLflow logs a run at each trial of hyperparameter combination targeting the improvement of a metric value.
-
+The training pipeline is feeded with optimized hyperparameters reached in the bayesian search of **Optuna** (check in the [experiment](./research/Experiment.ipynb)). MLflow logs a child run at each trial of hyperparameter combination targeting the improvement of a metric value. The best combination is provided in the parent run when the study is finished. The best combination of hyperparameters is passed to the training pipeline configuration in the params.yaml file.
 
 ---
 
@@ -147,7 +147,7 @@ Each stage produces a well-defined artifact that is consumed by downstream stage
 **Model Strategy:**
 
 * The model type is selected via configuration (e.g., XGBoost or Random Forest).
-* Hyperparameters are defined in [Experiment.ipynb](./research/Experiment.ipynb) and logged in config's params.yaml.
+* Hyperparameters are defined externally and logged in config's params.yaml.
 * Training occurs only on resampled, transformed data.
 
 **MLflow Integration:**
@@ -189,21 +189,90 @@ Training only produces a **candidate**.
 
 ---
 
-
-
----
-
-## Serving & Inference Strategy
-
-
-
-
----
-
 ## Project Structure
 
+```
+churn-project/
+├── .github/workflows/          # CI/CD pipelines (GitHub Actions)
+│
+├── config/                     # Centralized YAML configuration
+│   ├── config.yaml             # Training Pipeline configurations
+│   ├── params.yaml             # Model and training hyperparameters
+│   └── schema.yaml             # Input data schema
+│
+├── docs/                       # Documentation content
+│
+├── frontend/                   # User-facing application
+│   ├── Dockerfile              # Container for Streamlit frontend
+│   └── streamlit_app.py        # Interactive UI for predictions and insights
+│
+├── monitoring/                 # Observability, drift detection, and retraining
+│   ├── data_drift/
+│   │   ├── monitoring_flow.py     # Data monitoring Prefect flow
+│   │   ├── monitoring_tasks.py    # Data monitoring Prefect tasks
+│   │   └── retraining_trigger.py  # Automated retraining trigger logic
+│   ├── grafana/
+│   │   └── dashboard.json      # Grafana dashboard configuration
+│   └── prometheus/
+│       ├── prometheus.yml      # Metrics scraping configuration
+│       └── alert_rules.yml     # Alerting rules
+│
+├── research/                   # Exploratory and experimental work
+│   ├── data_drift_study.ipynb  # Drift analysis experiment
+│   └── Experiment.ipynb        # Core Data Science Context and Methodology 
+│
+├── src/churn_project/          # Core application and ML logic
+│   ├── api/                    # Inference API
+│   │   ├── app.py              # FastAPI application
+│   │   ├── Dockerfile          # Production inference container
+│   │   └── schemas.py          # Request/response schemas
+│   │
+│   ├── aws/                       # AWS integrations
+│   │   ├── s3_utils.py            # S3 utilities (model and artifact loading)
+│   │   └── monitoring_logging.py  # Centralized logging to AWS/S3 for API usage
+│   │
+│   ├── components/             # ML pipeline components
+│   │   ├── data_ingestion.py
+│   │   ├── data_validation.py
+│   │   ├── data_transformation.py
+│   │   ├── model_trainer.py
+│   │   ├── model_evaluation.py
+│   │   └── model_pusher.py
+│   │
+│   ├── config/                 # Runtime configuration management
+│   │   └── configuration.py
+│   │
+│   ├── constants/              # Global constants
+│   │
+│   ├── entity/                 # Typed configuration and artifact entities
+│   │   ├── config_entity.py
+│   │   └── artifact_entity.py
+│   │
+│   ├── inference/              # Prediction logic
+│   │   └── prediction_service.py
+│   │
+│   ├── orchestrator/           # Training orchestration
+│   │   └── training_flow.py    # Prefect training pipeline flow
+│   │
+│   ├── exception.py            # Custom exception handling
+│   ├── logger.py               # Centralized logging
+│   └── utils.py                # Shared utilities
+│
+├── tests/                      # Automated test suite
+│   ├── unit/                   # Unit tests
+│   ├── integration/            # Integration tests
+│   └── conftest.py             # Pytest fixtures
+│
+├── .env.example                # Environment variable template
+├── .pre-commit-config.yaml     # Code quality hooks
+├── README.md                   # High-level project documentation
+├── docker-compose.prod.yaml    # Production orchestration
+├── docker-compose.yaml         # Local development orchestration
+├── main.py                     # Training pipeline entry point
+├── poetry.lock                 # Locked dependencies
+└── pyproject.toml              # Dependency and project configuration (Poetry)
 
-
+```
 ---
 
 ## Setup
