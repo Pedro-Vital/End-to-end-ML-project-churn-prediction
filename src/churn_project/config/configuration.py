@@ -39,17 +39,23 @@ class ConfigurationManager:
         )
         return mlflow_configuration
 
+    @staticmethod
+    def require_env(name: str) -> str:
+        value = os.getenv(name)
+        if not value:
+            raise ValueError(f"Required environment variable '{name}' is not set")
+        return value
+
     def get_data_ingestion_config(self) -> DataIngestionConfig:
         config = self.config.data_ingestion  # dict-like ConfigBox
         columns = self.schema.columns  # dict-like ConfigBox
 
         create_directories([config.root_dir])
 
-        # Prefer environment variables if available for sensitive info
-        db_host = os.getenv("DB_HOST", config.db_host)
-        db_user = os.getenv("DB_USER", config.db_user)
-        db_password = os.getenv("DB_PASSWORD", config.db_password)
-        db_name = os.getenv("DB_NAME", config.db_name)
+        db_host = self.require_env("DB_HOST")
+        db_user = self.require_env("DB_USER")
+        db_password = self.require_env("DB_PASSWORD")
+        db_name = self.require_env("DB_NAME")
 
         data_ingestion_config = DataIngestionConfig(
             db_host=db_host,
