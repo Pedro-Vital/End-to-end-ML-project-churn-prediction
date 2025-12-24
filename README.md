@@ -4,29 +4,29 @@
 
 ## Introduction
 
-This repository contains an end-to-end MLOps system for churn prediction in a bank. The project demonstrates core MLOps principles, including orchestration, model deployment, model versioning, experiment tracking, monitoring, automated retraining triggered by data drift, best practices and much more. The core data science methodology including EDA, modeling and the necessary hyperparameter tuning using bayesian search to feed the training pipeline is provided in the [Experiment.ipynb](./research/Experiment.ipynb).
+This repository contains a production-oriented end-to-end MLOps system for churn prediction in a bank. The project demonstrates core MLOps principles, including orchestration, model deployment, model versioning, experiment tracking, monitoring, automated retraining triggered by data drift, best practices and much more. The core data science context and methodology including exploratory data analysis, modeling and the hyperparameter optimization needed to feed the training pipeline is provided in the research's [Experiment.ipynb](./research/Experiment.ipynb).
 
 ---
 
 ## Table of Contents
 
-- [Problem Statement](#problem-statement)
+- [Project Overview](#project-overview)
 - [System Architecture](#system-architecture)
-- [Data](#data)
-- [Experiment Tracking](#experiment-tracking)
-- [Orchestration](#orchestration)
-- [Deployment](#deployment)
-- [Monitoring](#monitoring)
-- [Best Practices](#best-practices)
-- [Setup](#setup)
-- [Running Tests](#running-tests)
+- [ML Lifecycle Design](#ml-lifecycle-design)
+- [Serving & Inference Strategy](#serving--inference-strategy)
 - [Project Structure](#project-structure)
-- [Future Works](#future-works)
-- [Acknowledgements](#acknowledgements)
+- [Setup](#setup)
+- [Limitations & Future Improvements](#limitations--future-improvements)
 
 ---
 
-## Problem Statement
+## Project Overview
+
+### Problem Statement
+
+Customer retention plays a critical role in maintaining long-term profitability in the modern banking environments. By predicting which customers are likely to leave in advance, companies can activate retention strategies. This project builds a predictive model to flag potential churners for a bank’s credit card services, enabling the bank to take targeted retention actions.
+
+### High-level solution
 
 
 
@@ -39,7 +39,62 @@ This repository contains an end-to-end MLOps system for churn prediction in a ba
 
 ---
 
-## Data
+### Orchestration
+
+**Prefect** is a code-based orchestration tool that acts as the backbone of the training and monitoring workflows.
+- The **training pipeline** orchestrates data ingestion, data validation, data transformation, model training, model evaluation and model pushing.
+- The **data monitoring pipeline** runs independently. It consumes prediction data stored in an S3 Bucket and performs a statistical test called Kolmogorov-Smirnov to detect data drift. Comparing the new coming data with a reference dataset, the monitoring pipeline triggers the training pipeline when drift thresholds are exceeded. Alongside, it generates and stores a data monitoring report using Evidently for diagnostics and visualization.
+
+Prefect enables scheduled monitoring with deployed flows, which are registered and runnable versions of the pipelines.
+
+### Experiment Tracking and Model Versioning
+
+**MLflow** is used for experiment tracking and model versioning.
+- All experiments, metrics, parameters, and model artifacts are tracked in MLflow
+- The selected “best” (champion) model is persisted to a dedicated S3 location
+- Inference services load models directly from S3.
+
+---
+
+### Serving & Inference Layer
+
+The serving stack runs on a single **Amazon EC2** instance using Docker Compose.
+- **FastAPI** exposes the prediction endpoints
+- At application startup, the FastAPI service loads the latest champion model from S3 into memory
+- **Streamlit** provides a lightweight frontend for interaction and demonstration
+- Both services run in isolated **Docker** containers with registered images from **Amazon ECR**.
+- The FastAPI service exposes a metrics endpoint that is scraped by **Prometheus** to perform monitoring and alerting.
+- **Grafana** is used for the better visualization of metrics.
+
+---
+
+### CI/CD & Deployment Strategy
+
+**GitHub Actions** is responsible for continuous integration and deployment:
+
+**CI:**
+- Linting and unit tests
+- Docker image builds for API and frontend
+- Pushes images to Amazon ECR
+
+**CD:**
+- Secure SSH connection to the EC2 instance
+- Pulls updated images from ECR
+- Restarts services via Docker Compose
+
+AWS IAM roles are used instead of long-lived credentials for EC2, aligning with security best practices.
+
+
+---
+
+### Hyperparameter Tuning
+
+The training pipeline uses optimized hyperparameters by the bayesian search of **Optuna**. MLflow logs a run at each trial of hyperparameter combination targeting the improvement of a metric value.
+---
+
+---
+
+## ML Lifecycle Design
 
 
 
@@ -47,33 +102,7 @@ This repository contains an end-to-end MLOps system for churn prediction in a ba
 
 ---
 
-## Experiment Tracking and Model Versioning
-
-
-
----
-
-## Orchestration
-
-
-
-
----
-
-## Deployment
-
-
-
----
-
-## Best Practices
-
-
-
-
----
-
-## Setup
+## Serving & Inference Strategy
 
 
 
@@ -86,11 +115,20 @@ This repository contains an end-to-end MLOps system for churn prediction in a ba
 
 ---
 
+## Setup
+
+
+
+
+---
+
 ## Sample Run
 
 
 
+---
 
+## Limitations & Future Improvements
 
 
 ## 🔧 Configuration & Secrets Handling
@@ -191,13 +229,32 @@ Here is a **straightforward, no-nonsense README section** you can drop directly 
 
 Done.
 
+“Model is loaded at application startup”
 
-#### Drift Detection Strategy
+“New models require redeployment”
 
-This system uses a two-layer monitoring approach:
+You have to remove "naive" columns
 
-* Statistical layer (SciPy KS test) is the authoritative signal used for automation and retraining decisions.
 
-* Observability layer (Evidently) is used exclusively for diagnostics, visualization, and human inspection.
 
-Evidently results do not trigger automated actions.
+
+
+
+
+
+
+
+
+- The retraining problem
+
+The only events that trigger a reload are:
+
+Container restart
+
+EC2 restart
+
+Uvicorn restart
+
+Crash + restart
+
+New deployment
