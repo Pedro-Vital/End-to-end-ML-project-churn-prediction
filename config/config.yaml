@@ -1,18 +1,6 @@
-# --------------------------------------------------
-# Copy this file to config.yaml before running the project.
-# For database credentials, either:
-#   - replace the null values below, OR
-#   - set environment variables: DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
-# Environment variables always override these values.
-# --------------------------------------------------
-
 artifacts_root: artifacts
 
 data_ingestion:
-  db_host: null # REPLACE OR SET ENV VARIABLES
-  db_user: null # REPLACE OR SET ENV VARIABLES
-  db_password: null # REPLACE OR SET ENV VARIABLES
-  db_name: null # REPLACE OR SET ENV VARIABLES
   base_query: "SELECT {} FROM churners;"
   root_dir: artifacts/data_ingestion
   raw_data_path: artifacts/data_ingestion/raw_data.csv
