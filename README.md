@@ -14,6 +14,7 @@ This repository contains a production-oriented end-to-end MLOps system for churn
 - [ML Lifecycle Design](#ml-lifecycle-design)
 - [Project Structure](#project-structure)
 - [Setup](#setup)
+- [Sample Run](#sample-run)
 - [Limitations & Future Improvements](#limitations--future-improvements)
 
 
@@ -100,6 +101,13 @@ The ML lifecycle consists of the following stages:
 **Ingestion → Validation → Transformation → Training → Evaluation → Promotion → Deployment**
 
 Each stage produces a well-defined artifact that is consumed by downstream stages, ensuring traceability, reproducibility, and failure isolation.
+
+Each ML lifecycle stage was implemented in the following order:
+- [config](./config)
+- [entities](./src/churn_project/entity)
+- [configuration manager](./src/churn_project/config/configuration.py)
+- [components](./src/churn_project/components)
+- [pipeline](./src/churn_project/orchestrator/training_flow.py)
 
 ---
 
@@ -277,10 +285,256 @@ churn-project/
 
 ## Setup
 
+#### Prerequisites
 
+- Python 3.12
+- Poetry
+- Docker and Docker Compose
+- MySQL
+- AWS account
+- Recommended: Unix-based system (MacOS/Linux)
 
+### Setup Instructions
+
+Follow these steps to set up the project environment and run the project on your local machine.
+
+### 1. Initial Setup
+
+**1.1. Clone the Repository**
+
+```bash
+git clone https://github.com/Pedro-Vital/churn-project.git
+cd churn-project
+```
+
+**1.2. Ensure Poetry is installed**
+
+Check whether Poetry is already available:
+```bash
+poetry --version
+```
+If not installed, install it using the official installer:
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+```
+Then restart your terminal or ensure Poetry is in your PATH.
+
+**1.3. Configure Poetry to use the project-local virtual environment (recommended)**
+```bash
+poetry config virtualenvs.in-project true
+```
+**1.4. Install project dependencies**
+```bash
+poetry install
+```
+**1.5. Activate the virtual environment**
+```bash
+poetry env activate
+```
+If it wasn't activated, restart your terminal.
+
+**1.6. Set up environment variables**
+
+Create your local environment file:
+```bash
+cp .env.example .env
+```
+Edit the .env file and provide the necessary values ​​when you obtain them.
+
+**1.7. Verify the setup**
+
+You can perform a quick sanity check:
+```bash
+python -c "import churn_project; print('Environment OK')"
+```
+
+If no errors occur, the environment is correctly configured.
+
+### 2. Database Setup
+
+**2.1. Download the dataset from Kaggle:**
+[Credit Card Customers Dataset](https://www.kaggle.com/datasets/sakshigoyal7/credit-card-customers)
+
+**2.2. Add the dataset to MySQL**
+
+- Remove the "naive" columns
+- Insert the dataset in a table named `churners` 
+
+**2.3. Add database credentials to .env**
+
+### 3. MLflow Setup
+
+**3.1 Start the MLflow server runinng:**
+```bash
+mlflow server \
+  --backend-store-uri sqlite:///mlflow.db \
+  --default-artifact-root ./mlruns \
+  --host 127.0.0.1 \
+  --port 5000
+```
+
+**3.2 Access MLflow UI: `http://127.0.0.1:5000`**
+
+### 4. Prefect Setup (Orchestration)
+
+**4.1 Start the Prefect server running:**
+
+```bash
+prefect server start
+```
+
+**4.2 Access the UI: `http://127.0.0.1:4200`**
+
+**4.3 Create a work pool**
+
+```bash
+prefect work-pool create churn-pool --type process
+```
+
+**4.4 Deploy flows**
+
+Training pipeline
+
+```bash
+prefect deploy src/churn_project/orchestrator/training_flow.py:training_flow \
+  -n churn-train
+
+```
+
+Data monitoring pipeline
+
+```bash
+prefect deploy monitoring/data_drift/monitoring_flow.py:data_monitoring_flow \
+  -n monitoring
+
+```
+
+During deployment, Prefect may ask configuration questions. Default answers are sufficient.
+
+**4.5 Start a worker**
+
+```bash
+prefect worker start --pool churn-pool
+
+```
+- **Multiple terminals are recommended**:
+    - Terminal 1: MLflow server
+    - Terminal 2: Prefect server
+    - Terminal 3: Prefect worker
+    - Terminal 4 (optional): Training / inference commands
+
+### 5. S3 Bucket Setup
+
+**5.1. Create an S3 bucket named churn-production**
+
+**5.2 Create an IAM User with the following policy: `AmazonS3FullAccess`**
+
+**The policy hereby used is useful just to reduce IAM complexity. In a real-world case, we would use a custom least-privilege policy.**
+
+**5.3. Add AWS credentials to .env**
+
+***Now you're all set to run the project locally. But if you want to run it completely using an EC2 instance, proceed with the setup.***
+
+### 6. Containers Setup 
+
+**6.1 Create two ECR Repositories: `churn-fastapi` and `churn-streamlit`**\
+Configuration:
+- Visibility: Private
+- Image tag mutability: Mutable
+- Enable Scan on push
+- Default for the rest
+
+**6.2 Click each repository and copy the repository URI**
+
+**6.3 Replace the repository URI and AWS_REGION of [docker-compose.prod.yaml](./docker-compose.prod.yaml) with your actual repository URI and region**
+
+### 7. IAM Setup
+
+**7.1 Create an IAM User with the following policy: `AmazonEC2ContainerRegistryPowerUser`**\
+It will be used by GitHub Actions
+
+**7.1 Create an IAM Role named `churn-ec2-role` with the following policies: `AmazonEC2ContainerRegistryReadOnly` and `AmazonS3FullAccess`**\
+Configuration:
+- Use case: EC2
+
+**The policy hereby used is useful just to reduce IAM complexity. In a real-world case, we would use a custom least-privilege policy.**
+
+### 8. EC2 Bootstrap
+
+**8.1 Launch EC2**
+- Name: churn-prod-ec2
+- OS: Amazon Linux 2023 (AL2023)
+- Instance type: t3.small
+- Create or Select Key Pair. You will later store this key as a GitHub Secret.
+- VPC: Default
+- Subnet: Default
+- Auto-assign Public IP: Enable
+- Assign it a security group named churn-prod-sg with the following inbound rules:
+
+| Port | Source | Purpose |
+| --- | --- | --- |
+| 22 | Your IP | SSH |
+| 8000 | 0.0.0.0/0 | FastAPI |
+| 8501 | 0.0.0.0/0 | Streamlit |
+| 9090 | Your IP | Prometheus |
+| 3000 | Your IP | Grafana |
+
+- Configure storage: 30 GB, type gp3
+- IAM Instance Profile (Advanced Details): churn-ec2-role
+- Default / Empty for the rest
+
+**Launch Instance**
+
+**8.1 Install Docker + Compose**
+- Connect to the EC2 Instance
+- Run the following commands:
+```bash
+sudo dnf update -y
+sudo dnf install -y docker
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo usermod -aG docker ec2-user
+
+mkdir -p ~/.docker/cli-plugins
+curl -SL https://github.com/docker/compose/releases/download/v2.25.0/docker-compose-linux-x86_64 \
+  -o ~/.docker/cli-plugins/docker-compose
+chmod +x ~/.docker/cli-plugins/docker-compose
+```
+
+### 9 GitHub Secrets Setup
+
+**9.1 Add the following as variables**
+- AWS_ACCOUNT_ID → Your AWS account ID
+- AWS_REGION → Your AWS Region
+- EC2_USER → if you didn't change it, it is `ec2-user` (Amazon Linux) 
+
+**9.2 Add the following as secrets**
+- AWS_ACCESS_KEY_ID → IAM user access key for ECR auth only (from 7.1)
+- AWS_SECRET_ACCESS_KEY → IAM user secret key for ECR auth only (from 7.1)
+- EC2_HOST → Your Public IPv4 or DNS
+- EC2_SSH_KEY → Private key → That is the key selected at EC2 launch. Use `cat <key-name>` to access, then copy and paste it entirely to secrets.
+
+***Now you can run deployment adding a minimal modification to the repository. It will trigger GitHub Actions workflow.***
 
 ---
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Sample Run
 
@@ -290,77 +544,7 @@ churn-project/
 
 ## Limitations & Future Improvements
 
-
-## 🔧 Configuration & Secrets Handling
-
-This project uses a **simple and safe configuration pattern**:
-
-* **`config.yaml.example`** → committed to the repository
-* **`config.yaml`** → ignored by Git and contains real credentials
-* **Environment variables** → optional and override values in `config.yaml`
-
-This prevents leaking database credentials on GitHub while keeping local setup straightforward.
-
 ---
-
-## 📁 Step 1 — Create your `config.yaml`
-
-Start by copying the example file:
-
-```bash
-cp config.yaml.example config.yaml
-```
-
-Inside `config.yaml`, you will see:
-
-```yaml
-db_host: null
-db_user: null
-db_password: null
-db_name: null
-```
-
-You have two ways to provide your database credentials:
-
----
-
-### **🔹 Option A — Fill the values directly**
-
-```yaml
-db_host: "localhost"
-db_user: "root"
-db_password: "12345"
-db_name: "bank_db"
-```
-
-This is the simplest approach for local development.
-
----
-
-### **🔹 Option B — Use environment variables (preferred for CI)**
-
-```bash
-export DB_HOST=localhost
-export DB_USER=root
-export DB_PASSWORD=12345
-export DB_NAME=bank_db
-```
-
-These values automatically override whatever is in `config.yaml`.
-
----
-
-config (config.yaml, schema.yaml, params.yaml)
-entities (config and artifact)
-configuration manager in src config
-components
-pipeline
-
-
-Here is a **straightforward, no-nonsense README section** you can drop directly into your repository.
-
----
-
 # Grafana Dashboard (Import Instructions)
 
 1. Open Grafana
@@ -393,17 +577,7 @@ Done.
 
 “New models require redeployment”
 
-You have to remove "naive" columns
-
-
-
-
-
-
-
-
-
-
+---
 
 - The retraining problem
 
