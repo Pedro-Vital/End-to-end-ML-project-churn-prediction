@@ -11,7 +11,7 @@
 - The EC2 instance does not build images
 - Deployment is triggered by pushing changes to the repository
 
-### 1. Containers Setup 
+### 1. Containers Setup
 
 **1.1 Create two ECR Repositories: `churn-fastapi` and `churn-streamlit`**\
 Configuration:
@@ -82,7 +82,7 @@ chmod +x ~/.docker/cli-plugins/docker-compose
 **4.1 Add the following as variables**
 - AWS_ACCOUNT_ID → Your AWS account ID
 - AWS_REGION → Your AWS Region
-- EC2_USER → if you didn't change it, it is `ec2-user` (Amazon Linux) 
+- EC2_USER → if you didn't change it, it is `ec2-user` (Amazon Linux)
 
 **4.2 Add the following as secrets**
 - AWS_ACCESS_KEY_ID → IAM user access key for ECR auth only (from 7.1)
@@ -91,4 +91,3 @@ chmod +x ~/.docker/cli-plugins/docker-compose
 - EC2_SSH_KEY → Private key → That is the key selected at EC2 launch. Use `cat <key-name>` to access, then copy and paste it entirely to secrets.
 
 ***Now you can run deployment adding a minimal modification to the repository. It will trigger GitHub Actions workflow.***
-
