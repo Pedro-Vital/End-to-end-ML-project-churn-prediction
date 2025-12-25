@@ -4,9 +4,9 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - 'README.md'
-      - '/docs/*'
-      - '/research/*'
+      - README.md
+      - docs/**
+      - research/**
 
 jobs:
   ci:
