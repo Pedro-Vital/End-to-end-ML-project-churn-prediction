@@ -7,17 +7,17 @@ This repository contains a production-oriented end-to-end MLOps system for churn
 
 **The core data science documentation with all context and methodology including exploratory data analysis, modeling and hyperparameter tuning is provided in the research's [`Experiment.ipynb`](./research/Experiment.ipynb).**
 
+---
 ## Table of Contents
 
 - [Project Overview](#project-overview)
 - [System Architecture](#system-architecture)
 - [ML Lifecycle Design](#ml-lifecycle-design)
-- [Project Structure](#project-structure)
 - [Setup](#setup)
 - [Sample Run](#sample-run)
 - [Limitations & Future Improvements](#limitations--future-improvements)
 
-
+---
 ## Project Overview
 
 ### Problem Statement
@@ -27,15 +27,14 @@ Customer retention plays a critical role in maintaining long-term profitability 
 ### High-level solution
 
 
+**Check the project structure description in [`docs/project_structure.md`](./docs/project_structure.md)**
 
-
-
+---
 ## System Architecture
 ![System Architecture](./docs/assets/Churn_Project_Architecture.svg)
 
 
 
----
 #### 1. Orchestration
 
 **Prefect** is a code-based orchestration tool that acts as the backbone of the training and monitoring workflows.
@@ -44,8 +43,6 @@ Customer retention plays a critical role in maintaining long-term profitability 
 
 Prefect enables scheduled monitoring with deployed flows, which are registered and runnable versions of the pipelines.
 
----
-
 #### 2. Experiment Tracking and Model Versioning
 
 **MLflow** is used for experiment tracking and model versioning.
@@ -53,13 +50,9 @@ Prefect enables scheduled monitoring with deployed flows, which are registered a
 - The selected “best” (champion) model is persisted to a dedicated S3 location
 - Inference services load models directly from S3.
 
----
-
 #### 3. Hyperparameter Tuning
 
 The training pipeline is feeded with optimized hyperparameters reached in the bayesian search of **Optuna** (check in the [experiment](./research/Experiment.ipynb)). MLflow logs a child run at each trial of hyperparameter combination targeting the improvement of a metric value. The best combination is provided in the parent run when the study is finished. The best combination of hyperparameters is passed to the training pipeline configuration in the params.yaml file.
-
----
 
 #### 4. Serving & Inference Layer
 
@@ -70,8 +63,6 @@ The serving stack runs on a single **Amazon EC2** instance using Docker Compose.
 - Both services run in isolated **Docker** containers with registered images from **Amazon ECR**.
 - The FastAPI service exposes a metrics endpoint that is scraped by **Prometheus** to perform monitoring and alerting.
 - **Grafana** is used for the better visualization of metrics.
-
----
 
 #### 5. CI/CD & Deployment Strategy
 
@@ -89,7 +80,6 @@ The serving stack runs on a single **Amazon EC2** instance using Docker Compose.
 
 AWS IAM roles are used instead of long-lived credentials for EC2, aligning with security best practices.
 
-
 ---
 
 ## ML Lifecycle Design
@@ -98,7 +88,7 @@ This project implements a **fully orchestrated, reproducible, and production-ori
 
 The ML lifecycle consists of the following stages:
 
-**Ingestion → Validation → Transformation → Training → Evaluation → Promotion → Deployment**
+**Ingestion → Validation → Transformation → Training → Evaluation → Promotion**
 
 Each stage produces a well-defined artifact that is consumed by downstream stages, ensuring traceability, reproducibility, and failure isolation.
 
@@ -109,85 +99,46 @@ Each ML lifecycle stage was implemented in the following order:
 - [components](./src/churn_project/components)
 - [pipeline](./src/churn_project/orchestrator/training_flow.py)
 
----
-
-#### 1. Data Ingestion
-
-**Objective:** Extract raw data from the source system and produce training and testing datasets.
-
-**Design:**
-
+**1. Data Ingestion:** Extract raw data from the source system and produce training and testing datasets.
 * Data is extracted directly from a relational database using SQLAlchemy.
 * A deterministic train/test split is applied using a fixed random seed.
 
----
-
-#### 2. Data Validation
-
-**Objective:** Enforce schema integrity and data sanity before allowing any training to proceed.
-
-**Validation Checks:**
-
+**2. Data Validation:** Enforce schema integrity and data sanity before allowing any training to proceed.
 * Column presence validation against the declared schema
 * Data type validation per column
 * Missing value detection
 
----
-
-#### 3. Data Transformation & Feature Engineering
-
-**Objective:** Convert validated raw data into model-ready numerical representations while preserving reproducibility.
-
-**Key Steps:**
-
-* Feature engineering using a custom transformer:
-  * Behavioral ratios (e.g., activity growth)
-  * Customer value aggregation features
+**3. Data Transformation:** Convert validated raw data into model-ready numerical representations.
+* Feature engineering using a custom transformer
 * Feature scaling using `StandardScaler`
 * Class imbalance handling using **SMOTE**, applied **only to training data**
 
----
-
-#### 4. Model Training
-
-**Objective:** Train a candidate model using validated, transformed data and register it with full metadata.
+**4. Model Training**: Train a candidate model using validated, transformed data and register it.
 
 **Model Strategy:**
-
 * The model type is selected via configuration (e.g., XGBoost or Random Forest).
 * Hyperparameters are defined externally and logged in config's params.yaml.
 * Training occurs only on resampled, transformed data.
 
 **MLflow Integration:**
-
 * Training parameters and metrics are logged
 * A complete inference pipeline (preprocessor + model) is registered in the MLflow Model Registry
 
 Training only produces a **candidate**.
 
----
-
-#### 5. Model Evaluation & Acceptance
-
-**Objective:** Decide whether a newly trained model is eligible for production.
+**5. Model Evaluation & Acceptance**: Decide whether a newly trained model is eligible for production.
 
 **Evaluation Logic:**
-
 * The current production (champion) model is loaded if it exists
 * Both models are evaluated on the same untouched test dataset
 * ROC-AUC is used as the primary selection metric
 
 **Acceptance Rule:**
-
 * A model is accepted **only if** it exceeds the production model’s AUC by a defined margin
 * If no production model exists, the new model is accepted by default
 * Each model version is explicitly tagged as `approved` or `rejected`
 
----
-
-#### 6. Model Promotion & Production Deployment
-
-**Objective:** Safely promote an approved model and make it available for inference.
+**6. Model Pushing:** Promote an approved model and make it available for inference.
 
 **Promotion Steps:**
 
@@ -195,92 +146,6 @@ Training only produces a **candidate**.
 2. The promoted version is assigned the alias `champion`
 3. Model artifacts and metadata are exported and uploaded to a production S3 location
 
----
-
-## Project Structure
-
-```
-churn-project/
-├── .github/workflows/          # CI/CD pipelines (GitHub Actions)
-│
-├── config/                     # Centralized YAML configuration
-│   ├── config.yaml             # Training Pipeline configurations
-│   ├── params.yaml             # Model and training hyperparameters
-│   └── schema.yaml             # Input data schema
-│
-├── docs/                       # Documentation content
-│
-├── frontend/                   # User-facing application
-│   ├── Dockerfile              # Container for Streamlit frontend
-│   └── streamlit_app.py        # Interactive UI for predictions and insights
-│
-├── monitoring/                 # Observability, drift detection, and retraining
-│   ├── data_drift/
-│   │   ├── monitoring_flow.py     # Data monitoring Prefect flow
-│   │   ├── monitoring_tasks.py    # Data monitoring Prefect tasks
-│   │   └── retraining_trigger.py  # Automated retraining trigger logic
-│   ├── grafana/
-│   │   └── dashboard.json      # Grafana dashboard configuration
-│   └── prometheus/
-│       ├── prometheus.yml      # Metrics scraping configuration
-│       └── alert_rules.yml     # Alerting rules
-│
-├── research/                   # Exploratory and experimental work
-│   ├── data_drift_study.ipynb  # Drift analysis experiment
-│   └── Experiment.ipynb        # Core Data Science Context and Methodology 
-│
-├── src/churn_project/          # Core application and ML logic
-│   ├── api/                    # Inference API
-│   │   ├── app.py              # FastAPI application
-│   │   ├── Dockerfile          # Production inference container
-│   │   └── schemas.py          # Request/response schemas
-│   │
-│   ├── aws/                       # AWS integrations
-│   │   ├── s3_utils.py            # S3 utilities (model and artifact loading)
-│   │   └── monitoring_logging.py  # Centralized logging to AWS/S3 for API usage
-│   │
-│   ├── components/             # ML pipeline components
-│   │   ├── data_ingestion.py
-│   │   ├── data_validation.py
-│   │   ├── data_transformation.py
-│   │   ├── model_trainer.py
-│   │   ├── model_evaluation.py
-│   │   └── model_pusher.py
-│   │
-│   ├── config/                 # Runtime configuration management
-│   │   └── configuration.py
-│   │
-│   ├── constants/              # Global constants
-│   │
-│   ├── entity/                 # Typed configuration and artifact entities
-│   │   ├── config_entity.py
-│   │   └── artifact_entity.py
-│   │
-│   ├── inference/              # Prediction logic
-│   │   └── prediction_service.py
-│   │
-│   ├── orchestrator/           # Training orchestration
-│   │   └── training_flow.py    # Prefect training pipeline flow
-│   │
-│   ├── exception.py            # Custom exception handling
-│   ├── logger.py               # Centralized logging
-│   └── utils.py                # Shared utilities
-│
-├── tests/                      # Automated test suite
-│   ├── unit/                   # Unit tests
-│   ├── integration/            # Integration tests
-│   └── conftest.py             # Pytest fixtures
-│
-├── .env.example                # Environment variable template
-├── .pre-commit-config.yaml     # Code quality hooks
-├── README.md                   # High-level project documentation
-├── docker-compose.prod.yaml    # Production orchestration
-├── docker-compose.yaml         # Local development orchestration
-├── main.py                     # Training pipeline entry point
-├── poetry.lock                 # Locked dependencies
-└── pyproject.toml              # Dependency and project configuration (Poetry)
-
-```
 ---
 
 ## Setup
@@ -356,27 +221,9 @@ You can perform a quick sanity check:
 python3 -c "import churn_project; print('Environment OK')"
 ```
 
-If no errors occur, the environment is correctly configured.
+If no errors occur, the environment is correctly configured. **If you faced issues, check [`setup_issues.md`](./docs/setup_issues.md)**
 
----
-**If you faced issues:**\
-Maybe you need to disable Poetry keyring:
-```bash
-poetry config keyring.enabled false
-```
-With environment issues, check the poetry envs:
-```bash
-poetry env list
-```
-Explicitly tell Poetry which Python to use:
-```bash
-poetry env use python3.12
-```
-Restart your terminal
 
-If you are struggling to activate the poetry env you can proceed running the commands of next steps adding `poetry run` at the beginning. 
-
----
 ### 2. Database Setup
 
 **2.1. Download the dataset from Kaggle:**
@@ -460,7 +307,7 @@ prefect worker start --pool churn-pool
 
 **5.3. Add AWS credentials to .env**
 
-***Now you're all set to run the project locally. But if you want to follow deployment, proceed with the [deployment setup](./docs/deployment.md).***
+***Now you're all set to run the project locally. But if you want to follow deployment, proceed with the complete setup in [`docs/deployment.md`](./docs/deployment.md).***
 
 ---
 
