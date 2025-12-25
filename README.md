@@ -202,9 +202,10 @@ poetry install
 ```
 **1.4. Activate the virtual environment**
 ```bash
+poetry env use python3.12
 poetry env activate
 ```
-If it wasn't activated, restart your terminal.
+If it wasn't activated, **restart your terminal**.
 
 **1.5. Set up environment variables**
 
@@ -218,7 +219,7 @@ Edit the .env file and provide the necessary values ​​when you obtain them.
 
 You can perform a quick sanity check:
 ```bash
-python3 -c "import churn_project; print('Environment OK')"
+python -c "import churn_project; print('Environment OK')"
 ```
 
 If no errors occur, the environment is correctly configured. **If you faced issues, check [`setup_issues.md`](./docs/setup_issues.md)**
@@ -231,8 +232,8 @@ If no errors occur, the environment is correctly configured. **If you faced issu
 
 **2.2. Add the dataset to MySQL**
 
-- Remove the "naive" columns
-- Insert the dataset in a table named `churners` 
+- Remove non-informative (“naive”) columns
+- Insert the dataset into a table named `churners` 
 
 **2.3. Add database credentials to .env**
 
@@ -247,9 +248,15 @@ mlflow server \
   --port 5000
 ```
 
-**3.2 Access MLflow UI: `http://127.0.0.1:5000`**
+**3.2 You can access MLflow UI: [`http://127.0.0.1:5000`](http://127.0.0.1:5000)**
 
 ### 4. Prefect Setup (Orchestration)
+
+- **Multiple terminals are recommended**:
+    - Terminal 1: MLflow server
+    - Terminal 2: Prefect server
+    - Terminal 3: Prefect worker
+    - Terminal 4 (optional): Training / inference commands
 
 **4.1 Start the Prefect server running:**
 
@@ -257,33 +264,39 @@ mlflow server \
 prefect server start
 ```
 
-**4.2 Access the UI: `http://127.0.0.1:4200`**
+**4.2 You can access the UI: [`http://127.0.0.1:4200`](http://127.0.0.1:4200)**
+
+**4.3 Set the Prefect API URL:**
+```bash
+prefect config set PREFECT_API_URL=http://127.0.0.1:4200/api
+```
 
 **4.3 Create a work pool**
-
 ```bash
 prefect work-pool create churn-pool --type process
 ```
 
 **4.4 Deploy flows**
 
-Training pipeline
+**Training pipeline**
 
 ```bash
 prefect deploy src/churn_project/orchestrator/training_flow.py:training_flow \
   -n churn-train
-
 ```
+Configuration (for simplicity):
+- Select the work-pool you just created (churn-pool)
+- Remote code storage: No (recommended)
+- Scheduling Configuration: No (This can be done in the UI)
+- Save configuration: Yes (recommende)
 
-Data monitoring pipeline
+**Data monitoring pipeline**
 
 ```bash
 prefect deploy monitoring/data_drift/monitoring_flow.py:data_monitoring_flow \
   -n monitoring
-
 ```
-
-During deployment, Prefect may ask configuration questions. Default answers are sufficient.
+You can use the same configuration of the previous prefect deployment
 
 **4.5 Start a worker**
 
@@ -291,11 +304,6 @@ During deployment, Prefect may ask configuration questions. Default answers are 
 prefect worker start --pool churn-pool
 
 ```
-- **Multiple terminals are recommended**:
-    - Terminal 1: MLflow server
-    - Terminal 2: Prefect server
-    - Terminal 3: Prefect worker
-    - Terminal 4 (optional): Training / inference commands
 
 ### 5. S3 Bucket Setup
 
