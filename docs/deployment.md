@@ -90,4 +90,7 @@ chmod +x ~/.docker/cli-plugins/docker-compose
 - EC2_HOST → Your Public IPv4 or DNS
 - EC2_SSH_KEY → Private key → That is the key selected at EC2 launch. Use `cat <key-name>` to access, then copy and paste it entirely to secrets.
 
-***Now you can run deployment adding a minimal modification to the repository. It will trigger GitHub Actions workflow.***
+---
+***Deployments are triggered by pushing changes to the repository. No deployment commands are executed locally.***
+
+***So now you can run deployment adding a minimal modification to the repository. It will trigger GitHub Actions workflow.***
