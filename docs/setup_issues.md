@@ -11,6 +11,12 @@ poetry config keyring.enabled false
 
 - Keep restarting the terminal after each attempt.
 
+Creating the environment inside the repo might be useful:
+```bash
+poetry config virtualenvs.in-project true
+poetry install
+poetry env activate
+```
 Check the poetry envs:
 ```bash
 poetry env list
@@ -18,15 +24,6 @@ poetry env list
 Remove broken environments if necessary:
 ```bash
 poetry env remove --all
-```
-Explicitly tell Poetry which Python to use:
-```bash
-poetry env use python3.12
-```
-Creating the environment inside the repo might be useful:
-```bash
-poetry config virtualenvs.in-project true
-poetry install
 ```
 
 If you are struggling to activate the poetry env you can simply proceed running the commands of next steps in Setup adding `poetry run` at the beginning. 
