@@ -331,21 +331,17 @@ curl -sSL https://install.python-poetry.org | python3 -
 ```
 Then restart your terminal or ensure Poetry is in your PATH.
 
-**1.3. Configure Poetry to use the project-local virtual environment (recommended)**
-```bash
-poetry config virtualenvs.in-project true
-```
-**1.4. Install project dependencies**
+**1.3. Install project dependencies**
 ```bash
 poetry install
 ```
-**1.5. Activate the virtual environment**
+**1.4. Activate the virtual environment**
 ```bash
 poetry env activate
 ```
 If it wasn't activated, restart your terminal.
 
-**1.6. Set up environment variables**
+**1.5. Set up environment variables**
 
 Create your local environment file:
 ```bash
@@ -353,15 +349,34 @@ cp .env.example .env
 ```
 Edit the .env file and provide the necessary values ​​when you obtain them.
 
-**1.7. Verify the setup**
+**1.6. Verify the setup**
 
 You can perform a quick sanity check:
 ```bash
-python -c "import churn_project; print('Environment OK')"
+python3 -c "import churn_project; print('Environment OK')"
 ```
 
 If no errors occur, the environment is correctly configured.
 
+---
+**If you faced issues:**\
+Maybe you need to disable Poetry keyring:
+```bash
+poetry config keyring.enabled false
+```
+With environment issues, check the poetry envs:
+```bash
+poetry env list
+```
+Explicitly tell Poetry which Python to use:
+```bash
+poetry env use python3.12
+```
+Restart your terminal
+
+If you are struggling to activate the poetry env you can proceed running the commands of next steps adding `poetry run` at the beginning. 
+
+---
 ### 2. Database Setup
 
 **2.1. Download the dataset from Kaggle:**
