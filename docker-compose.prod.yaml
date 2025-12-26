@@ -1,14 +1,14 @@
 services:
   fastapi:
     image: 786923080007.dkr.ecr.sa-east-1.amazonaws.com/churn-fastapi:latest
-    # image: <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/churn-fastapi:latest
-    # Replace <ACCOUNT_ID> and <AWS_REGION> with your actual AWS account ID and region
+    # image: <ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/churn-fastapi:latest
+    # Replace 786923080007 (<ACCOUNT_ID>) and sa-east-1 (<AWS_REGION>) with YOUR actual AWS ACCOUNT ID and AWS REGION
     ports:
       - "8000:8000"
     environment:
       AWS_REGION: "sa-east-1"
       # AWS_REGION: "<AWS_REGION>"
-      # Replace <AWS_REGION> with your actual AWS region
+      # Replace <AWS_REGION> with your actual AWS REGION
       PROD_S3_URI: "s3://churn-production/champion-model/"
       MONITORING_LOG_S3_URI: "s3://churn-production/monitoring_logs/"
     networks:
@@ -17,8 +17,8 @@ services:
 
   streamlit_app:
     image: 786923080007.dkr.ecr.sa-east-1.amazonaws.com/churn-streamlit:latest
-    # image: <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/churn-streamlit:latest
-    # Replace <ACCOUNT_ID> and <AWS_REGION> with your actual AWS account ID and region
+    # image: <ACCOUNT_ID>.dkr.ecr.<AWS_REGION>.amazonaws.com/churn-streamlit:latest
+    # Replace 786923080007 (<ACCOUNT_ID>) and sa-east-1 (<AWS_REGION>) with YOUR actual AWS ACCOUNT ID and AWS REGION
     ports:
       - "8501:8501"
     depends_on:
