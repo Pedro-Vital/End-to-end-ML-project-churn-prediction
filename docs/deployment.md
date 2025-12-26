@@ -13,16 +13,13 @@
 
 ### 1. Containers Setup
 
-**1.1 Create two ECR Repositories: `churn-fastapi` and `churn-streamlit`**\
+**1.1 Create two Private ECR Repositories: `churn-fastapi` and `churn-streamlit`**\
 Configuration:
-- Visibility: Private
 - Image tag mutability: Mutable
 - Enable Scan on push
 - Default for the rest
 
-**1.2 Click each repository and copy the repository URI**
-
-**1.3 Replace the repository URI and AWS_REGION of [docker-compose.prod.yaml](./docker-compose.prod.yaml) with your actual repository URI and region**
+**1.2 Replace the AWS ACCOUNT ID and AWS REGION of [docker-compose.prod.yaml](./docker-compose.prod.yaml) with YOUR actual AWS ACCOUNT ID and AWS REGION to match your image URIs, but keep the "latest" tag.**
 
 ### 2. IAM Setup
 
@@ -31,6 +28,7 @@ It will be used by GitHub Actions
 
 **2.1 Create an IAM Role named `churn-ec2-role` with the following policies: `AmazonEC2ContainerRegistryReadOnly` and `AmazonS3FullAccess`**\
 Configuration:
+- Trusted entity type: AWS Service
 - Use case: EC2
 
 **The policy hereby used is useful just to reduce IAM complexity. In a real-world case, we would use a custom least-privilege policy.**
@@ -41,7 +39,7 @@ Configuration:
 - Name: churn-prod-ec2
 - OS: Amazon Linux 2023 (AL2023)
 - Instance type: t3.small
-- Create or Select Key Pair. You will later store this key as a GitHub Secret.
+- Create or Select Key Pair (RSA). You will later store this key as a GitHub Secret or you can use it to SSH into the EC2 instance.
 - VPC: Default
 - Subnet: Default
 - Auto-assign Public IP: Enable
@@ -49,11 +47,13 @@ Configuration:
 
 | Port | Source | Purpose |
 | --- | --- | --- |
-| 22 | Your IP | SSH |
+| 22 | 0.0.0.0/0 | SSH |
 | 8000 | 0.0.0.0/0 | FastAPI |
 | 8501 | 0.0.0.0/0 | Streamlit |
-| 9090 | Your IP | Prometheus |
-| 3000 | Your IP | Grafana |
+| 9090 | 0.0.0.0/0 | Prometheus |
+| 3000 | 0.0.0.0/0 | Grafana |
+
+**Warning: This inbound rule is for quick start, it is not recommended long-term. The most appropriate is to set the source for SSH, Prometheus and Grafana as your IP and connect to EC2 via SSH Client**
 
 - Configure storage: 30 GB, type gp3
 - IAM Instance Profile (Advanced Details): churn-ec2-role
