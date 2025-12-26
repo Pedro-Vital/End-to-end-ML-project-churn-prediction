@@ -265,7 +265,7 @@ mlflow server \
 prefect server start
 ```
 
-**4.2 You can access the UI: [`http://127.0.0.1:4200`](http://127.0.0.1:4200)**
+**4.2 You can access Prefect UI: [`http://127.0.0.1:4200`](http://127.0.0.1:4200)**
 
 **4.3 Set the Prefect API URL:**
 ```bash
@@ -316,10 +316,48 @@ prefect worker start --pool churn-pool
 
 **5.3. Create an access key for the user and add AWS credentials to .env**
 
-***Now you're all set to run the project locally. But if you want to follow deployment, proceed with the complete setup in [`docs/deployment.md`](./docs/deployment.md).***
+---
+### Now you're all set to run the project locally.
+
+Run the training pipeline:
+```bash
+python main.py
+
+```
+or
+```bash
+prefect deployment run "TrainingPipelineFlow/churn-train"
+
+```
+You can also run it from the Prefect UI.
+
+To start containers, run:
+```bash
+docker compose up -d
+```
+and access services:
+- FastAPI at [**`http://localhost:8000/health`**](http://localhost:8000/health)
+- Streamlit at [**`http://localhost:8501`**](http://localhost:8501)
+- Prometheus at [**`http://localhost:9090`**](http://localhost:9090)
+- Grafana at [**`http://localhost:3000`**](http://localhost:3000)
+
+Test some predictions in streamlit and then follow to test monitoring:
+
+*info: replace YYYY-MM-DD with the day you performed predictions (e.g. 2026-01-23)*
+```bash
+prefect deployment run "DataMonitoringFlow/monitoring" \
+  --params '{
+    "date": "YYYY-MM-DD",
+    "threshold": 0.05
+  }'
+
+```
+
+or try to set a schedule in Prefect UI (check the [sample run](#sample-run)).
+
+**If you want to follow deployment, proceed with the complete setup in [`docs/deployment.md`](./docs/deployment.md).**
 
 ---
-
 
 
 
