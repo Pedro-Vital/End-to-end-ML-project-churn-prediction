@@ -158,7 +158,7 @@ This project supports two execution modes:
 2. **Production Deployment**  
    End-to-end deployment using Amazon ECR, EC2, and GitHub Actions.
 
-This README focuses on **local execution**.  
+This README's **Setup** is focused on **local execution**.  
 Production deployment is documented in [`docs/deployment.md`](./docs/deployment.md).
 
 
@@ -204,6 +204,7 @@ poetry install
 ```bash
 poetry env use python3.12
 poetry env activate
+eval "$(poetry env activate)"
 ```
 If it wasn't activated, **restart your terminal**.
 
@@ -307,13 +308,13 @@ prefect worker start --pool churn-pool
 
 ### 5. S3 Bucket Setup
 
-**5.1. Create an S3 bucket named churn-production**
+**5.1. Create an S3 bucket named `churn-production`**
 
 **5.2 Create an IAM User with the following policy: `AmazonS3FullAccess`**
 
 **The policy hereby used is useful just to reduce IAM complexity. In a real-world case, we would use a custom least-privilege policy.**
 
-**5.3. Add AWS credentials to .env**
+**5.3. Create an access key for the user and add AWS credentials to .env**
 
 ***Now you're all set to run the project locally. But if you want to follow deployment, proceed with the complete setup in [`docs/deployment.md`](./docs/deployment.md).***
 
