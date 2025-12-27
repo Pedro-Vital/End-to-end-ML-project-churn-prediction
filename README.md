@@ -39,7 +39,7 @@ Customer retention plays a critical role in maintaining long-term profitability 
 
 **Prefect** is a code-based orchestration tool that acts as the backbone of the training and monitoring workflows.
 - The **training pipeline** orchestrates data ingestion, data validation, data transformation, model training, model evaluation and model pushing.
-- The **data monitoring pipeline** runs independently. It consumes prediction data stored in an S3 Bucket and performs a statistical test called Kolmogorov-Smirnov to detect data drift. Comparing the new coming data with a reference dataset, the monitoring pipeline triggers the training pipeline when drift thresholds are exceeded. Alongside, it generates and stores a data monitoring report using Evidently for diagnostics and visualization.
+- The **data monitoring pipeline** runs independently. It consumes the **input** data, used for prediction and stored in an S3 Bucket, to perform a statistical test called Kolmogorov-Smirnov to detect data drift. Comparing the new coming data with a reference dataset, the monitoring pipeline triggers the training pipeline when drift thresholds are exceeded. Alongside, it generates and stores a data monitoring report using Evidently for diagnostics and visualization.
 
 Prefect enables scheduled monitoring with deployed flows, which are registered and runnable versions of the pipelines.
 
@@ -345,14 +345,14 @@ prefect deployment run "TrainingPipelineFlow/churn-train"
 ```
 The [`config/config.yaml`](./config/params.yaml) file has two very important values that can be modified to change the training approach:
 - In the "model_trainer" configuration, we can set the model to be trained between "XGBClassifier" and "RandomForestClassifier"
-- In the "model_evaluation" configuration, we can define the change threshold value, which indicates how much the AUC metric of the new trained model must be greater than the AUC of the old model in production for the new trained model to be accepted as the new production model → `is_new_trained_model_accepted = new_auc > (old_auc + change_threshold)`
+- In the "model_evaluation" configuration, we can define the change threshold value, which indicates how much the AUC metric of the new trained model must be greater than the AUC of the old model in production for the new trained model to be accepted as the new production model → `is_new_trained_model_accepted = new_auc > (old_auc + threshold)`
 
-It was performed 3 consecutive runs of the training pipeline in the following pattern:\
+It was performed 3 consecutive runs of the training pipeline in the following pattern:
 1. `(model: RandomForestClassifier, threshold: 0.005)`
 2. `(model: XGBClassifier, threshold: 0.005)`
 3. `(model: XGBClassifier, threshold: 0.000)`
 
-The result in the MLflow experiment tracking follows:
+The resulting MLflow experiment tracking for the last run follows:
 
 ![MLflow_Training_Run](./docs/assets/MLflow_Training_Run.png)
 
@@ -360,10 +360,10 @@ There is also the MLflow model registry result:
 
 ![MLflow_Model_Registry](./docs/assets/MLflow_Model_Registry.png)
 
-- On the left of the image is presented the "churn_model" registry, where all trained models are registered. The "validation_status" tag shows whether the model has outperformed the previous production model that was replaced.
+- On the left of the image is presented the "churn_model" registry, where all trained models are registered. The "validation_status" tag indicates whether the model outperformed the model currently in production.
 - On the right of the image is presented the "prod.churn_model" registry, where all the approved models are registered. When a newly trained model outperforms the previous `champion` production model, it receives the alias `champion` and the old model loses the alias. The `champion` model will serve predictions.
 
-## Services
+### Services
 
 To start the containers locally:
 ```bash
@@ -379,16 +379,32 @@ To access services:
 | Prometheus | [**`http://localhost:9090`**](http://localhost:9090) | **`http://<EC2_PUBLIC_IP>:9090`** |
 | Grafana | [**`http://localhost:3000`**](http://localhost:3000) | **`http://<EC2_PUBLIC_IP>:3000`** |
 
-Streamlit result:
+**Streamlit** result:
 
 ![Streamlit](./docs/assets/Streamlit.png)
 
+Streamlit performs requests for the both *post* endpoints of **FastAPI**: single prediction and batch prediction.
+
+**Grafana** result:
+
 ![Grafana](./docs/assets/Grafana.png)
 
+To reach the Grafana dashboard:
+- We need to log into Grafana with user: admin and password: admin and then create a new password
+- In "Connections", we add **Prometheus** as our data source
+- We go to **Dashboards → Import**
+- Paste the dashboard JSON file from [`monitoring/grafana/dashboard.json`](./monitoring/grafana/dashboard.json)
+- When Grafana asks for a datasource mapping, set:\
+   **DS_PROMETHEUS → your Prometheus datasource**
+- Click **Import**. The dashboard loads immediately and shows our informative metrics.
 
-Test some predictions in streamlit and then follow to test monitoring:
+### Data Monitoring Pipeline
 
-*info: replace YYYY-MM-DD with the day you performed predictions (e.g. 2026-01-23)*
+The data monitoring pipeline uses the Kolmogorov-Smirnov statistical test to detect data drift in the input data used for prediction. When the test's p-value exceeds the threshold it means that the drift is statistically significant and retraining will be triggered. The default threshold is set to 0.05.
+
+After some predictions in the streamlit interface, we can move on testing the data drift monitoring.
+
+We can set scheduled monitoring in **[`Prefect UI`](http://127.0.0.1:4200) → Deployments → monitoring → Schedule** or run it manually with:  
 ```bash
 prefect deployment run "DataMonitoringFlow/monitoring" \
   --params '{
@@ -397,41 +413,20 @@ prefect deployment run "DataMonitoringFlow/monitoring" \
   }'
 
 ```
+*`replace YYYY-MM-DD with the date on which the predictions you want to monitor were performed (e.g. 2026-01-23)`*
 
-or try to set a schedule in Prefect UI (check the [`sample run`](#sample-run)).
+To simplify the monitoring approach on this project, the monitoring takes into account only the data of the date (**in UTC time**) on which the predictions you want to monitor were performed. If monitoring is scheduled, the pipeline performs drift detection in the data from the scheduled date. If monitoring is triggered manually, the pipeline performs drift detection in the data from the specified date.
+
+The following image shows the in the Prefect UI
+
+
 
 ---
 
 ## Limitations & Future Improvements
 
 ---
-# Grafana Dashboard (Import Instructions)
 
-1. Open Grafana
-   `http://localhost:3000`
-
-2. Go to
-   **Dashboards → Import**
-
-3. Upload or paste the dashboard JSON file from this repository.
-
-4. When Grafana asks for a datasource mapping, set:
-   **DS_PROMETHEUS → your Prometheus datasource**
-
-5. Click **Import**.
-   The dashboard loads immediately and shows:
-
-   * API request throughput
-   * API latency (p50/p95/p99)
-   * HTTP error rate
-   * Prediction throughput
-   * Prediction latency
-   * Churn output distribution
-   * Process CPU and memory
-
-6. Ensure Prometheus is scraping your FastAPI service and exposing `/metrics`.
-
-Done.
 
 “Model is loaded at application startup”
 
@@ -452,3 +447,6 @@ Uvicorn restart
 Crash + restart
 
 New deployment
+
+
+we can set more than 1 feature to be drifted to trigger retraining
