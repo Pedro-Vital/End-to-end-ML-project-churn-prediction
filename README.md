@@ -59,7 +59,7 @@ The training pipeline is feeded with optimized hyperparameters reached in the ba
 The serving stack runs on a single **Amazon EC2** instance using Docker Compose.
 - **FastAPI** exposes the prediction endpoints
 - At application startup, the FastAPI service loads the latest champion model from S3 into memory
-- **Streamlit** provides a lightweight frontend for interaction and demonstration
+- **Streamlit** performs requests, providing a lightweight frontend for interaction and demonstration
 - Both services run in isolated **Docker** containers with registered images from **Amazon ECR**.
 - The FastAPI service exposes a metrics endpoint that is scraped by **Prometheus** to perform monitoring and alerting.
 - **Grafana** is used for the better visualization of metrics.
@@ -352,46 +352,39 @@ It was performed 3 consecutive runs of the training pipeline in the following pa
 2. `(model: XGBClassifier, threshold: 0.005)`
 3. `(model: XGBClassifier, threshold: 0.000)`
 
-The result in the MLflow experiment tracking and MLflow model registry follows.
+The result in the MLflow experiment tracking follows:
 
-![MLflow_Training_Pipeline](./docs/assets/MLflow_Training_Pipeline.png)
+![MLflow_Training_Run](./docs/assets/MLflow_Training_Run.png)
 
+There is also the MLflow model registry result:
 
+![MLflow_Model_Registry](./docs/assets/MLflow_Model_Registry.png)
 
+- On the left of the image is presented the "churn_model" registry, where all trained models are registered. The "validation_status" tag shows whether the model has outperformed the previous production model that was replaced.
+- On the right of the image is presented the "prod.churn_model" registry, where all the approved models are registered. When a newly trained model outperforms the previous `champion` production model, it receives the alias `champion` and the old model loses the alias. The `champion` model will serve predictions.
 
+## Services
 
-
-
-
-
-
-
-
-
-
-
-
-Run the training pipeline:
-```bash
-python main.py
-
-```
-or
-```bash
-prefect deployment run "TrainingPipelineFlow/churn-train"
-
-```
-You can also run it from the Prefect UI.
-
-To start containers, run:
+To start the containers locally:
 ```bash
 docker compose up -d
 ```
-and access services:
-- FastAPI at [**`http://localhost:8000/health`**](http://localhost:8000/health)
-- Streamlit at [**`http://localhost:8501`**](http://localhost:8501)
-- Prometheus at [**`http://localhost:9090`**](http://localhost:9090)
-- Grafana at [**`http://localhost:3000`**](http://localhost:3000)
+In the EC2 instance, containers will be started by the CI/CD or it can be done manually, as described in [`docs/deployment.md`](./docs/deployment.md).
+
+To access services:
+| Service | Local | EC2 Instance |
+| --- | --- | --- |
+| FastAPI | [**`http://localhost:8000/health`**](http://localhost:8000/health) | **`http://<EC2_PUBLIC_IP>:8000/health`** |
+| Streamlit | [**`http://localhost:8501`**](http://localhost:8501) | **`http://<EC2_PUBLIC_IP>:8501`** |
+| Prometheus | [**`http://localhost:9090`**](http://localhost:9090) | **`http://<EC2_PUBLIC_IP>:9090`** |
+| Grafana | [**`http://localhost:3000`**](http://localhost:3000) | **`http://<EC2_PUBLIC_IP>:3000`** |
+
+Streamlit result:
+
+![Streamlit](./docs/assets/Streamlit.png)
+
+![Grafana](./docs/assets/Grafana.png)
+
 
 Test some predictions in streamlit and then follow to test monitoring:
 
