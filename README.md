@@ -417,8 +417,15 @@ prefect deployment run "DataMonitoringFlow/monitoring" \
 
 To simplify the monitoring approach on this project, the monitoring takes into account only the data of the date (**in UTC time**) on which the predictions you want to monitor were performed. If monitoring is scheduled, the pipeline performs drift detection in the data from the scheduled date. If monitoring is triggered manually, the pipeline performs drift detection in the data from the specified date.
 
-The following image shows the in the Prefect UI
+For the sample run, the Training Pipeline was triggered after detection of data drift by the Data Monitoring Pipeline for a certain date. The following image is provided by the Prefect UI, it shows the registered temporal sequence of tasks performed in the aforementioned scenario.
 
+![Prefect_Monitoring](./docs/assets/Prefect_Monitoring.png)
+
+The resulting evidently report follows:
+
+![Evidently_Report](./docs/assets/Evidently_Report.png)
+
+### Miscellaneous Screenshots
 
 
 ---
@@ -448,5 +455,6 @@ Crash + restart
 
 New deployment
 
+retraining is not detected by CICD
 
 we can set more than 1 feature to be drifted to trigger retraining
