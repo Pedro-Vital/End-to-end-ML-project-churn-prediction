@@ -1,6 +1,6 @@
 # Deployment Setup
 
-**To follow this guide, it is assumed that all steps in the Setup section of the README file have been completed and you have ran the training pipeline at least once.**
+**To follow this guide, it is assumed that all steps in the `Setup` section of the README file have been completed and that you have subsequently run the training pipeline at least once: `python main.py` to run it.**
 
 ## Deployment Architecture
 
