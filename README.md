@@ -115,12 +115,12 @@ Each ML lifecycle stage was implemented in the following order:
 
 **4. Model Training**: Train a candidate model using validated, transformed data and register it.
 
-**Model Strategy:**
+Model Strategy:
 * The model type is selected via configuration (e.g., XGBoost or Random Forest).
 * Hyperparameters are defined externally and logged in config's params.yaml.
 * Training occurs only on resampled, transformed data.
 
-**MLflow Integration:**
+MLflow Integration:
 * Training parameters and metrics are logged
 * A complete inference pipeline (preprocessor + model) is registered in the MLflow Model Registry
 
@@ -128,20 +128,19 @@ Training only produces a **candidate**.
 
 **5. Model Evaluation & Acceptance**: Decide whether a newly trained model is eligible for production.
 
-**Evaluation Logic:**
+Evaluation Logic:
 * The current production (champion) model is loaded if it exists
 * Both models are evaluated on the same untouched test dataset
 * ROC-AUC is used as the primary selection metric
 
-**Acceptance Rule:**
+Acceptance Rule:
 * A model is accepted **only if** it exceeds the production model’s AUC by a defined margin
 * If no production model exists, the new model is accepted by default
 * Each model version is explicitly tagged as `approved` or `rejected`
 
 **6. Model Pushing:** Promote an approved model and make it available for inference.
 
-**Promotion Steps:**
-
+Promotion Steps:
 1. Approved models are copied to a dedicated production registry
 2. The promoted version is assigned the alias `champion`
 3. Model artifacts and metadata are exported and uploaded to a production S3 location
@@ -314,10 +313,63 @@ prefect worker start --pool churn-pool
 
 **The policy hereby used is useful just to reduce IAM complexity. In a real-world case, we would use a custom least-privilege policy.**
 
-**5.3. Create an access key for the user and add AWS credentials to .env**
+**5.3. Create an access key for the user and add the AWS credentials to .env**
 
 ---
-### Now you're all set to run the project locally.
+
+**Now you're all set to run the project locally.**
+
+**If you want to follow deployment, proceed with the complete setup in [`docs/deployment.md`](./docs/deployment.md).**
+
+---
+
+## Sample Run
+
+### Hyperparameter Optimization
+The Hyperparameter Optimization using Optuna can be performed running the experiment in [`research/Experiment.ipynb`](./research/Experiment.ipynb). The notebook is designed to allow for the optimization in two models: XGBoost and Random Forest. Performing both tuning, we get the following result in the MLflow UI:
+
+![MLflow_Hyperparameter_Tuning](./docs/assets/MLflow_Hyperparameter_Tuning.png)
+
+We can see the two parent runs corresponding to the runs of Optuna's study for the two models. Each parent run has its child runs corresponding to all the trials to reach the best combination of Hyperparameters. The resulting best combination for the corresponding model is provided clicking in its parent run. From there, we can pass these values to [`config/params.yaml`](./config/params.yaml) to feed training.
+
+### Training Pipeline 
+Run it with:
+```bash
+python main.py
+
+```
+or
+```bash
+prefect deployment run "TrainingPipelineFlow/churn-train"
+
+```
+The [`config/config.yaml`](./config/params.yaml) file has two very important values that can be modified to change the training approach:
+- In the "model_trainer" configuration, we can set the model to be trained between "XGBClassifier" and "RandomForestClassifier"
+- In the "model_evaluation" configuration, we can define the change threshold value, which indicates how much the AUC metric of the new trained model must be greater than the AUC of the old model in production for the new trained model to be accepted as the new production model → `is_new_trained_model_accepted = new_auc > (old_auc + change_threshold)`
+
+It was performed 3 consecutive runs of the training pipeline in the following pattern:\
+1. `(model: RandomForestClassifier, threshold: 0.005)`
+2. `(model: XGBClassifier, threshold: 0.005)`
+3. `(model: XGBClassifier, threshold: 0.000)`
+
+The result in the MLflow experiment tracking and MLflow model registry follows.
+
+![MLflow_Training_Pipeline](./docs/assets/MLflow_Training_Pipeline.png)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Run the training pipeline:
 ```bash
@@ -353,32 +405,7 @@ prefect deployment run "DataMonitoringFlow/monitoring" \
 
 ```
 
-or try to set a schedule in Prefect UI (check the [sample run](#sample-run)).
-
-**If you want to follow deployment, proceed with the complete setup in [`docs/deployment.md`](./docs/deployment.md).**
-
----
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## Sample Run
-
-
+or try to set a schedule in Prefect UI (check the [`sample run`](#sample-run)).
 
 ---
 
