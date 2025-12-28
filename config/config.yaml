@@ -33,6 +33,6 @@ model_pusher:
 
 mlflow:
   tracking_uri: "http://127.0.0.1:5000"
-  experiment_name: "Churn-Pipeline"
+  experiment_name: "Churn-Train-Pipeline"
   registry_name: "churn_model"
   prod_registry_name: "prod.churn_model"
