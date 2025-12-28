@@ -117,7 +117,7 @@ def training_flow(
         prefect_logger.error(f"MLflow setup failed: {e}")
         raise
 
-    with mlflow.start_run(run_name="Pipeline_Run"):
+    with mlflow.start_run(run_name="Train_Pipeline_Run"):
         mlflow.set_tag("trigger_reason", trigger_reason)
         mlflow.set_tag("drift_date", drift_date)
 
