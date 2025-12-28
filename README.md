@@ -5,7 +5,7 @@
 
 This repository contains a production-oriented end-to-end MLOps system for churn prediction in a bank. The project demonstrates core MLOps principles, including orchestration, model deployment, model versioning, experiment tracking, monitoring, automated retraining triggered by data drift, best practices and much more. 
 
-**The core data science documentation with all context and methodology including exploratory data analysis, modeling and hyperparameter tuning is provided in the research's [`Experiment.ipynb`](./research/Experiment.ipynb).**
+**The core data science documentation with all the methodology context including exploratory data analysis, modeling and hyperparameter tuning is provided in [`research/Experiment.ipynb`](./research/Experiment.ipynb).**
 
 ---
 ## Table of Contents
@@ -352,16 +352,16 @@ It was performed 3 consecutive runs of the training pipeline in the following pa
 2. `(model: XGBClassifier, threshold: 0.005)`
 3. `(model: XGBClassifier, threshold: 0.000)`
 
-The resulting MLflow experiment tracking for the last run follows:
-
-![MLflow_Training_Run](./docs/assets/MLflow_Training_Run.png)
-
-There is also the MLflow model registry result:
+The **MLflow model registry** result follows:
 
 ![MLflow_Model_Registry](./docs/assets/MLflow_Model_Registry.png)
 
 - On the left of the image is presented the "churn_model" registry, where all trained models are registered. The "validation_status" tag indicates whether the model outperformed the model currently in production.
 - On the right of the image is presented the "prod.churn_model" registry, where all the approved models are registered. When a newly trained model outperforms the previous `champion` production model, it receives the alias `champion` and the old model loses the alias. The `champion` model will serve predictions.
+
+The following image shows the **MLflow experiment tracking** result for the last run:
+
+![MLflow_Training_Run](./docs/assets/MLflow_Training_Run.png)
 
 ### Services
 
@@ -369,7 +369,7 @@ To start the containers locally:
 ```bash
 docker compose up -d
 ```
-In the EC2 instance, containers will be started by the CI/CD or it can be done manually, as described in [`docs/deployment.md`](./docs/deployment.md).
+In the EC2 instance, containers will be started by CI/CD.
 
 To access services:
 | Service | Local | EC2 Instance |
@@ -379,13 +379,13 @@ To access services:
 | Prometheus | [**`http://localhost:9090`**](http://localhost:9090) | **`http://<EC2_PUBLIC_IP>:9090`** |
 | Grafana | [**`http://localhost:3000`**](http://localhost:3000) | **`http://<EC2_PUBLIC_IP>:3000`** |
 
-**Streamlit** result:
+#### Streamlit
 
 ![Streamlit](./docs/assets/Streamlit.png)
 
 Streamlit performs requests for the both *post* endpoints of **FastAPI**: single prediction and batch prediction.
 
-**Grafana** result:
+#### Grafana
 
 ![Grafana](./docs/assets/Grafana.png)
 
@@ -425,36 +425,48 @@ The resulting evidently report follows:
 
 ![Evidently_Report](./docs/assets/Evidently_Report.png)
 
-### Miscellaneous Screenshots
+### CI/CD
 
+![cicd](./docs/assets/cicd.png)
+
+Containers up in the **EC2 Instance** and resulting **S3 Bucket**:
+
+![S3_and_EC2](./docs/assets/S3_and_EC2.png)
 
 ---
 
 ## Limitations & Future Improvements
 
----
+**This section highlights *the main* limitations of the current system to clarify design trade-offs and guide future improvements.**
 
+### Data, Monitoring, and Retraining Limitations (Most Critical)
+- **Retraining does not leverage drifted data distributions:**
+When data drift is detected, retraining currently reuses the original training and test datasets sourced from MySQL. As a result, the newly trained model is not exposed to the shifted data distribution that triggered retraining, limiting the effectiveness of automated adaptation.
 
-“Model is loaded at application startup”
+- **Lack of explicit data lineage across the ML lifecycle:**
+Monitoring, retraining, and models are not yet linked through explicit data lineage. While drift detection triggers retraining, there is no guaranteed traceability between prediction logs, the data used for retraining, and the resulting model version.
 
-“New models require redeployment”
+- **Reference data is static and not versioned per model:**
+The monitoring pipeline relies on a single reference dataset. There is currently no mechanism to maintain reference data aligned with each production model version, which may reduce the accuracy of drift detection after multiple deployments.
 
----
+- **Drift detection is based on single-day snapshots:**
+Data drift detection is performed on a per-day snapshot of prediction data. This approach is sensitive to short-term fluctuations and does not capture longer-term distributional trends, increasing the risk of false-positive retraining triggers.
 
-- The retraining problem
+- **Overly sensitive retraining trigger logic:**
+Retraining is triggered as soon as any single feature is detected as drifted, with no minimum number of drifted features or cooldown mechanism. This can lead to unnecessary retraining cycles caused by transient or low-impact distribution changes.
 
-The only events that trigger a reload are:
+- **Prediction logs are stored as individual S3 objects:**
+Each prediction request is logged as a separate JSON object in S3. While simple and transparent, this approach does not scale efficiently and complicates downstream aggregation, querying, and dataset construction for retraining.
 
-Container restart
+### Model Deployment and Serving Limitations
 
-EC2 restart
+- **Model updates require API restart or redeployment:**
+The prediction API loads the production model at application startup. Newly promoted models are therefore not detected automatically, requiring a service restart or redeployment to serve updated models.
 
-Uvicorn restart
+- **Model serving is tightly coupled to the application:**
+The prediction service is embedded directly within the FastAPI application. This coupling limits flexibility, complicates independent scaling of inference workloads, and prevents adopting alternative serving strategies without application changes.
 
-Crash + restart
+### Security and Operational Limitations
 
-New deployment
-
-retraining is not detected by CICD
-
-we can set more than 1 feature to be drifted to trigger retraining
+- **Prometheus metrics endpoint is publicly exposed:**
+The /metrics endpoint is currently accessible without authentication. In a production environment, this could expose internal system behavior and should be protected via network-level controls or authentication mechanisms.
