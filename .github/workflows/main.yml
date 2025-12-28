@@ -124,7 +124,6 @@ jobs:
         run: |
           ssh ${{ vars.EC2_USER }}@${{ secrets.EC2_HOST }} "
             set -e
-            echo 'Starting deployment on EC2...'
 
             aws ecr get-login-password --region ${{ vars.AWS_REGION }} \
               | docker login --username AWS --password-stdin \
