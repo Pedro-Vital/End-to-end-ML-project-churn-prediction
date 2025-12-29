@@ -9,7 +9,7 @@ This project supports two execution modes:
    End-to-end deployment using Amazon ECR, EC2, and GitHub Actions.
 
 This **Setup** is focused on **local execution**.  
-Production deployment is documented in [`docs/deployment.md`](./docs/deployment.md).
+Production deployment is documented in [`deployment.md`](./deployment.md).
 
 
 #### Prerequisites
@@ -73,7 +73,7 @@ You can perform a quick sanity check:
 python -c "import churn_project; print('Environment OK')"
 ```
 
-If no errors occur, the environment is correctly configured. **If you faced issues, check [`setup_issues.md`](./docs/setup_issues.md)**
+If no errors occur, the environment is correctly configured. **If you faced issues, check [`setup_issues.md`](./setup_issues.md)**
 
 
 ### 2. Database Setup
@@ -170,6 +170,6 @@ prefect worker start --pool churn-pool
 
 ---
 
-**Now you're all set to run the project locally. You can check the sample run in [README.md](./README.md) to know how to run it**
+**Now you're all set to run the project locally. You can check the sample run in [`README.md`](../README.md) to know how to run it**
 
-**If you want to follow deployment, proceed with the complete setup in [`docs/deployment.md`](./docs/deployment.md).**
+**If you want to follow deployment, proceed with the complete setup in [`deployment.md`](./deployment.md).**
