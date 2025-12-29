@@ -1,6 +1,6 @@
 # Deployment Setup
 
-**To follow this guide, it is assumed that all steps in the `Setup` section of the README file have been completed and that you have subsequently run the training pipeline at least once: `python main.py` to run it.**
+**To follow this guide, it is assumed that the steps in [`setup.md`](./setup.md) have been completed and that you have subsequently run the training pipeline at least once: `python main.py` to run it.**
 
 ## Deployment Architecture
 
@@ -18,7 +18,7 @@ Configuration:
 - Enable Scan on push
 - Default for the rest
 
-**1.2 Replace the AWS ACCOUNT ID and AWS REGION of [docker-compose.prod.yaml](./docker-compose.prod.yaml) with YOUR actual AWS ACCOUNT ID and AWS REGION to match your image URIs, but keep the "latest" tag.**
+**1.2 Replace the AWS ACCOUNT ID and AWS REGION of [`docker-compose.prod.yaml`](../docker-compose.prod.yaml) with YOUR actual AWS ACCOUNT ID and AWS REGION to match your image URIs, but keep the "latest" tag.**
 
 ### 2. IAM Setup
 
@@ -90,6 +90,13 @@ chmod +x ~/.docker/cli-plugins/docker-compose
 - AWS_SECRET_ACCESS_KEY → IAM user secret key for ECR auth only (from 7.1)
 - EC2_HOST → Your Public IPv4 or DNS
 - EC2_SSH_KEY → Private key → That is the key selected at EC2 launch. Use `cat <key-name>` to access, then copy and paste it entirely to secrets.
+
+### To confirm services are reachable:
+
+- FastAPI: **`http://<EC2_PUBLIC_IP>:8000/health`**
+- Streamlit: **`http://<EC2_PUBLIC_IP>:8501`**
+- Prometheus: **`http://<EC2_PUBLIC_IP>:9090`**
+- Grafana: **`http://<EC2_PUBLIC_IP>:3000`**
 
 ***But if you want to deploy manually without using the GitHub Actions workflow, follow the instructions below.***
 ---
