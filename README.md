@@ -39,8 +39,6 @@ This project spans the full machine learning lifecycle, from offline experimenta
 - The **training pipeline** orchestrates data ingestion, data validation, data transformation, model training, model evaluation and model pushing.
 - The **data monitoring pipeline** runs independently. Comparing the new coming data with a reference dataset in a statistical test, the monitoring pipeline triggers the training pipeline when data drift is detected. When the test’s p-value falls below the defined threshold, the null hypothesis is rejected, indicating statistically significant data drift.
 
-Incoming prediction data is statistically compared against a reference dataset to detect distributional drift.
-
 Prefect enables scheduled monitoring with deployed flows, which are registered and runnable versions of the pipelines.
 
 #### 2. Experiment Tracking and Model Versioning (MLflow)
@@ -215,15 +213,7 @@ Retraining is triggered as soon as any single feature is detected as drifted, wi
 - **Prediction logs are stored as individual S3 objects:**
 Each prediction request is logged as a separate JSON object in S3. While simple and transparent, this approach does not scale efficiently and complicates downstream aggregation, querying, and dataset construction for retraining.
 
-### Model Deployment and Serving Limitations
+### Model Deployment
 
 - **Model updates require API restart or redeployment:**
 The prediction API loads the production model at application startup. Newly promoted models are therefore not detected automatically, requiring a service restart or redeployment to serve updated models.
-
-- **Model serving is tightly coupled to the application:**
-The prediction service is embedded directly within the FastAPI application. This coupling limits flexibility, complicates independent scaling of inference workloads, and prevents adopting alternative serving strategies without application changes.
-
-### Security and Operational Limitations
-
-- **Prometheus metrics endpoint is publicly exposed:**
-The /metrics endpoint is currently accessible without authentication. In a production environment, this could expose internal system behavior and should be protected via network-level controls or authentication mechanisms.
