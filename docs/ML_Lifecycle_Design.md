@@ -9,11 +9,11 @@ The ML lifecycle consists of the following stages:
 Each stage produces a well-defined artifact that is consumed by downstream stages, ensuring traceability, reproducibility, and failure isolation.
 
 Each ML lifecycle stage was implemented in the following order:
-- [config](./config)
-- [entities](./src/churn_project/entity)
-- [configuration manager](./src/churn_project/config/configuration.py)
-- [components](./src/churn_project/components)
-- [pipeline](./src/churn_project/orchestrator/training_flow.py)
+- [config](../config)
+- [entities](../src/churn_project/entity)
+- [configuration manager](../src/churn_project/config/configuration.py)
+- [components](../src/churn_project/components)
+- [pipeline](../src/churn_project/orchestrator/training_flow.py)
 
 **1. Data Ingestion:** Extract raw data from the source system and produce training and testing datasets.
 * Data is extracted directly from a relational database using SQLAlchemy.
@@ -33,7 +33,7 @@ Each ML lifecycle stage was implemented in the following order:
 
 Model Strategy:
 * The model type is selected via configuration (e.g., XGBoost or Random Forest).
-* Hyperparameters are defined using the [experiment](./research/Experiment.ipynb) and logged in [`config/params.yaml`](./config/params.yaml).
+* Hyperparameters are defined using the [experiment](../research/Experiment.ipynb) and logged in [`config/params.yaml`](../config/params.yaml).
 * Training occurs only on resampled, transformed data.
 
 MLflow Integration:
