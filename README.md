@@ -31,7 +31,10 @@ This project spans the full machine learning lifecycle, from offline experimenta
 
 ---
 ## System Architecture
-![System Architecture](./docs/assets/Churn_Project_Architecture.svg)
+
+#### System Architecture Diagram
+
+![sys_architecture_diagram](./docs/assets/sys_architecture_diagram.png)
 
 #### 1. Orchestration
 
@@ -77,6 +80,9 @@ The serving stack runs on a single **Amazon EC2** instance using Docker Compose.
 - Restarts services via Docker Compose
 
 AWS IAM roles are used instead of long-lived credentials for EC2, aligning with security best practices.
+
+#### Tools Communication Diagram
+![Tools_Communication_Diagram](./docs/assets/Tools_Communication_Diagram.svg)
 
 ---
 
